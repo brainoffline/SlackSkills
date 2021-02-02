@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SampleCLI": {
+      "commandName": "Project",
+      "commandLineArgs": "-ClientId=2413922186.809478819430 -ClientSecret=7c1d876a478af5f884f929c21e7c0a24 -AppLevelToken=xapp-1-APTE2Q3CN-1648851728097-67459ad3521e44aacc22509d945e8c9e02402129bd28727fedb58431b32c4d69 -BotAccessToken=xoxb-2413922186-807338129125-QZK85UDgsuZzgtniKo65Xl80 -UserAccessToken=xoxp-2413922186-2413922188-1020935092578-a8e399704df5023e8ba172e636cd7792"
+    }
+  }
+}

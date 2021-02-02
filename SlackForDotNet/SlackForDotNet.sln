@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30803.129
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlackForDotNet", "SlackForDotNet\SlackForDotNet.csproj", "{A27E6AC0-7CB2-4694-A506-9B15713AA886}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlackForDotNet.Tests", "SlackForDotNet.Tests\SlackForDotNet.Tests.csproj", "{64AE47E8-29A8-42B3-97BB-4AEA325992B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleCLI", "..\SampleCLI\SampleCLI.csproj", "{6A6E59BB-0D0A-48D9-8F6C-3D7217F0F1E7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asciis", "..\Asciis\Asciis.csproj", "{78D93974-9C27-41F2-8F72-F667063D7306}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asciis.Tests", "..\Asciis.Tests\Asciis.Tests.csproj", "{FB37EC97-CC22-492F-B7C4-F71F712D31BA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ascii", "Ascii", "{110021EE-5309-4027-8A9D-9B900D9A3F28}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{E4EC56F9-F14E-4447-AAB5-695D06325537}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A27E6AC0-7CB2-4694-A506-9B15713AA886}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A27E6AC0-7CB2-4694-A506-9B15713AA886}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A27E6AC0-7CB2-4694-A506-9B15713AA886}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A27E6AC0-7CB2-4694-A506-9B15713AA886}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64AE47E8-29A8-42B3-97BB-4AEA325992B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64AE47E8-29A8-42B3-97BB-4AEA325992B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64AE47E8-29A8-42B3-97BB-4AEA325992B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64AE47E8-29A8-42B3-97BB-4AEA325992B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A6E59BB-0D0A-48D9-8F6C-3D7217F0F1E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A6E59BB-0D0A-48D9-8F6C-3D7217F0F1E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A6E59BB-0D0A-48D9-8F6C-3D7217F0F1E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A6E59BB-0D0A-48D9-8F6C-3D7217F0F1E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78D93974-9C27-41F2-8F72-F667063D7306}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78D93974-9C27-41F2-8F72-F667063D7306}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78D93974-9C27-41F2-8F72-F667063D7306}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78D93974-9C27-41F2-8F72-F667063D7306}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB37EC97-CC22-492F-B7C4-F71F712D31BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB37EC97-CC22-492F-B7C4-F71F712D31BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB37EC97-CC22-492F-B7C4-F71F712D31BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB37EC97-CC22-492F-B7C4-F71F712D31BA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{64AE47E8-29A8-42B3-97BB-4AEA325992B2} = {E4EC56F9-F14E-4447-AAB5-695D06325537}
+		{78D93974-9C27-41F2-8F72-F667063D7306} = {110021EE-5309-4027-8A9D-9B900D9A3F28}
+		{FB37EC97-CC22-492F-B7C4-F71F712D31BA} = {E4EC56F9-F14E-4447-AAB5-695D06325537}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {884AC3DC-0BE9-48D0-8F5A-219C642BD125}
+	EndGlobalSection
+EndGlobal
