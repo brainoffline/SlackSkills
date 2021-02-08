@@ -11,6 +11,7 @@ using JetBrains.Annotations;
 
 using Microsoft.Extensions.Logging;
 
+using SlackForDotNet.Surface;
 #if SYSTEM_JSON
 using JsonSerializer = System.Text.Json.JsonSerializer;
 #else
@@ -63,6 +64,7 @@ namespace SlackForDotNet
         private readonly List< ApiEventHandler > _apiEventHandlers = new();
         private readonly List< CommandHandler >  _commandHandlers  = new();
         private readonly List< IParamParser >    _paramParsers     = new();
+        private readonly List< SlackSurface >    _surfaces         = new();
 
         static SlackApp()
         {
@@ -153,11 +155,14 @@ namespace SlackForDotNet
 
             OnMessage< HelloResponse >( OnHello );
             OnMessage< Goodbye >( ( _, msg ) => Reconnect() );
+
+            OnMessage< BlockActions >( OnBlockActions );
             OnMessage< EventCallback >( OnEventsApi );
+            OnMessage< Interactive >( OnInteractive );
             OnMessage< Disconnect >( OnDisconnect );
             OnMessage< Message >( OnAnyMessage );
 
-            RegisterCommand<HelpCommand>();
+            RegisterCommand< HelpCommand >();
 
             // Establish websocket connection
             if (_socketModeAvailable && !string.IsNullOrWhiteSpace(AppLevelToken))
@@ -171,7 +176,6 @@ namespace SlackForDotNet
                 _slackSocket.ApiEventReceived += ( sender, message ) => { RaiseApiEvent( message ); };
                 await _slackSocket.ConnectWebSocket(AppLevelToken!);
 
-                Logger?.LogDebug("Sending Ping");
                 _slackSocket.SendRequest(new Ping());
             }
 
@@ -185,17 +189,32 @@ namespace SlackForDotNet
             if (_slackSocket != null)
                 await _slackSocket.ConnectWebSocket(AppLevelToken!);
             
-            Logger?.LogDebug("Sending Ping");
             _slackSocket?.SendRequest(new Ping());
         }
 
         private void OnEventsApi( ISlackApp app, EventCallback msg )
         {
+            if (msg.payload == null) return;
+            
             AppId  = msg.payload.api_app_id;
             TeamId = msg.payload.team_id;
             
             if (msg.payload.@event != null)
                 RaiseApiEvent( msg.payload.@event );
+        }
+
+        private void OnInteractive(ISlackApp app, Interactive msg)
+        {
+            if (msg.payload != null)
+                RaiseApiEvent(msg.payload);
+
+        }
+        private void OnBlockActions(ISlackApp slackApp, BlockActions msg)
+        {
+            var callbackId = msg.view?.callback_id;
+
+            var surface = _surfaces.FirstOrDefault( s => s.CallbackId == callbackId );
+            surface?.Process( msg );
         }
 
         async Task<bool> GetSomeAccessTokens()
@@ -230,27 +249,13 @@ namespace SlackForDotNet
             return true;
         }
         
-                /// <summary>
+        /// <summary>
         /// Call this when a Interactive Message or API event is raised in your SlackBot API
         /// </summary>
         public void RaiseApiEvent( SlackMessage msg )
         {
             if (string.IsNullOrWhiteSpace(msg.type)) 
                 return;
-
-            //if (msg is Envelope envelope)
-            //{
-            //    var handler = _apiEventHandlers.FirstOrDefault(
-            //           h =>
-            //               h.MessageType == payload.PayloadType && 
-            //               h.MessageSubType == payload.PayloadSubType );
-            //    if (handler != null)
-            //    {
-            //        handler.MessageAction?.Invoke( this, msg );
-
-            //        return;
-            //    }
-            //}
 
             foreach (var handler in _apiEventHandlers)
             {
@@ -313,6 +318,11 @@ namespace SlackForDotNet
             _paramParsers.Add( new ParamParser< T >() );
         }
 
+        public void RegisterSurface( SlackSurface surface )
+        {
+            _surfaces.Add( surface );
+        }
+
         public string CommandHelp()
         {
             var sb  = new StringBuilder();
@@ -332,6 +342,77 @@ namespace SlackForDotNet
             return sb.ToString();
         }
 
+        public async Task<ViewsPublishResponse?> PublishHomepage( SlackSurface hometab, AppHomeOpened msg )
+        {
+            string key = $"home_{msg.user}";
+
+            if (_surfaces.Exists( s => s.ExternalId == key ))
+                return default;
+            
+            if (hometab.Layouts.Count > 0)
+            {
+                var pub = new ViewsPublish
+                          {
+                              user_id = msg.user,
+                              view = new HometabView
+                                     {
+                                         external_id = key,
+                                         callback_id = key,
+                                         blocks          = hometab.Layouts
+                                     }
+
+                          };
+                var result = await Send<ViewsPublish, ViewsPublishResponse>(pub);
+                if (result?.ok == true)
+                {
+                    hometab.ViewId     = result.view.id;
+                    hometab.AppId      = result.view.app_id;
+                    hometab.BotId      = result.view.bot_id;
+                    hometab.TeamId     = result.view.team_id;
+                    hometab.CallbackId = result.view.callback_id;
+                    hometab.ExternalId = result.view.external_id;
+                    hometab.Hash       = result.view.hash;
+                    hometab.RootViewId = result.view.root_view_id;
+                    //hometab.State      = result.view.state;
+
+                    if (result.view.blocks != null)
+                    {
+                        // Update block_id's
+                        for (int i = 0; i < result.view.blocks.Count; i++)
+                        {
+                            var slackView = result.view.blocks[ i ];
+                            var layout    = hometab.Layouts[ i ];
+                            if (string.IsNullOrEmpty( layout.block_id ))
+                                layout.block_id = slackView.block_id;
+                        }
+                    }
+
+                    RegisterSurface( hometab );
+                }
+            }
+            return default;
+        }
+
+        public async void Update( SlackSurface surface )
+        {
+            var pub = new ViewUpdate
+                      {
+                          hash        = surface.Hash,
+                          view_id     = surface.ViewId,
+                          view = new HometabView
+                                 {
+                                     callback_id  = surface.CallbackId,
+                                     external_id  = surface.ExternalId,
+                                     blocks       = surface.Layouts
+                                 }
+                      };
+            var result = await Send<ViewUpdate, ViewResponse>(pub);
+            if (result?.ok == true)
+            {
+                surface.Hash   = result.view.hash;
+                surface.ViewId = result.view.id;
+            }
+        }
 
         private void OnAnyMessage(ISlackApp app, Message msg)
         {
@@ -415,23 +496,6 @@ namespace SlackForDotNet
                 return;
 
             AppId = hello.connection_info?.app_id ?? "";
-
-            //if (_users.Count > 0)
-            //    return;
-            
-            //var usersResponse = await Send<UserList,UserListResponse>();
-            //if (usersResponse != null)
-            //    _users = usersResponse.members.ToList();
-
-            //var channelsResponse = await Send<ConversationList, ConversationsResponse>(
-            //        new ConversationList { types = "public_channel,private_channel,mpim,im" });
-            //if (channelsResponse != null)
-            //        _channels = channelsResponse.channels.ToList();
-
-            //var userGroupsResponse = await Send<UserGroupsList, UsergroupsResponse>(
-            //        new UserGroupsList { include_count = true, include_users = true });
-            //if (userGroupsResponse != null)
-            //    _userGroups = userGroupsResponse.usergroups.ToList();
         }
 
         /// <summary>
@@ -454,7 +518,7 @@ namespace SlackForDotNet
         /// If you specify a user, then only that user will see the message
         /// To reply to a particular message, pass the thread timestamp
         /// </summary>
-        public Task<MessageResponse?> Say( List<Block> blocks,
+        public Task<MessageResponse?> Say( List<Layout> blocks,
                                              string                channel,
                                              string?               user = null,
                                              string?               ts   = null)
@@ -464,16 +528,16 @@ namespace SlackForDotNet
                        : SayToUser("", blocks, channel, user, ts);
         }
 
-        public Task<MessageResponse?> Say(Block block,
+        public Task<MessageResponse?> Say(Layout block,
                                              string          channel,
                                              string?          user = null,
                                              string?          ts   = null)
         {
-            return Say(new List<Block> { block }, channel, user, ts);
+            return Say(new List<Layout> { block }, channel, user, ts);
         }
 
         public async Task<MessageResponse?> SayToChannel(string?      text,
-                                                            List<Block>? blocks,
+                                                            List<Layout>? blocks,
                                                             string       channel,
                                                             string?      threadTs = null)
         {
@@ -498,7 +562,7 @@ namespace SlackForDotNet
 #if SYSTEM_JSON
                 Logger.LogError(JsonSerializer.Serialize(response, JsonHelpers.DefaultJsonOptions));
 #else
-                Logger.LogError( JsonConvert.SerializeObject( response ) );
+                Logger.LogError( JsonConvert.SerializeObject( response, Formatting.Indented ) );
 #endif
             }
 
@@ -506,7 +570,7 @@ namespace SlackForDotNet
         }
 
         public async Task<MessageResponse?> SayToUser(string?      text,
-                                                         List<Block>? blocks,
+                                                         List<Layout>? blocks,
                                                          string      channel,
                                                          string       user,
                                                          string?      threadTs = null)

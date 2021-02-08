@@ -21,5 +21,6 @@ namespace SlackForDotNet
         public string? text          { get; set; }
         public bool?   is_ephemeral  { get; set; }
         public bool?   is_app_unfurl { get; set; }
+        public string? view_id       { get; set; }
     }
 }

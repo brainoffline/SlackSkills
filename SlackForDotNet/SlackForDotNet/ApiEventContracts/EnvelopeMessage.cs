@@ -22,7 +22,7 @@ namespace SlackForDotNet
 
     public class Envelope<T> : Envelope where T : class
     {
-        public T      payload        { get; set; }
+        public T? payload { get; set; }
     }
 
     [SlackMessage( "slash_commands")]

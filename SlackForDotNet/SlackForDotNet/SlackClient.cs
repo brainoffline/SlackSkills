@@ -13,6 +13,9 @@ using Asciis;
 
 using Microsoft.Extensions.Logging;
 
+using Newtonsoft.Json.Linq;
+
+using SlackForDotNet.Surface;
 #if SYSTEM_JSON
 using System.Text.Json;
 #else
@@ -34,6 +37,14 @@ namespace SlackForDotNet
 
         private readonly HttpClient         _httpClient;
         private          ILogger<SlackApp>? Logger { get; }
+
+        private static readonly SlackMessageConverter   MessageConverter        = new();
+        private static readonly SurfaceTextConverter    TextConverter           = new();
+        private static readonly ElementConverter        ElementConverter        = new();
+        private static readonly LayoutConverter         LayoutConverter         = new();
+        private static readonly ActionResponseConverter ActionResponseConverter = new();
+
+
 
         public SlackClient( ILogger< SlackApp >? logger )
         {
@@ -97,7 +108,6 @@ namespace SlackForDotNet
             bool postJson = messageAttribute.ApiType.HasFlag(Msg.Json)
                 || !messageAttribute.ApiType.HasFlag(Msg.FormEncoded);
 
-            Logger.LogInformation($">> {uri}");
             HttpRequestMessage webRequest = new HttpRequestMessage(HttpMethod.Post, uri);
             if (postJson)
             {
@@ -106,14 +116,14 @@ namespace SlackForDotNet
 #else
                 var content = JsonConvert.SerializeObject(request);
 #endif
-                Logger.LogDebug($">> {content}");
+                Logger.LogDebug($">>\n{uri}\n{content}");
 
                 webRequest.Content = new StringContent(content, Encoding.UTF8, "application/json");
             }
             else
             {
                 var parameters = new Parameters(request);
-                Logger.LogDebug($">> {parameters}");
+                Logger.LogDebug($">>\n{uri} {parameters}\n");
 
                 webRequest.Content = new FormUrlEncodedContent(parameters);
             }
@@ -123,13 +133,10 @@ namespace SlackForDotNet
             var webResponse = await _httpClient.SendAsync(webRequest);
             var json = await webResponse.Content.ReadAsStringAsync();
 
-            Logger.LogDebug($"<< {json}");
+            Logger.LogDebug($"<<\n{JObject.Parse(json) .ToString(Formatting.Indented)}\n");
 
-#if SYSTEM_JSON
-            return JsonSerializer.Deserialize<TResponse>(json);
-#else
-            return JsonConvert.DeserializeObject<TResponse>(json);
-#endif
+            return JsonConvert.DeserializeObject<TResponse>(json, 
+                MessageConverter, TextConverter, ElementConverter, LayoutConverter, ActionResponseConverter);
         }
 
         /// <summary>
@@ -175,7 +182,7 @@ namespace SlackForDotNet
 
             var uri = GetSlackUri(responseAttrs.Type, queryParameters);
 
-            Logger.LogInformation($">> {uri}");
+            Logger.LogInformation($">>\n{uri}\n");
 
             var webRequest = (HttpWebRequest)WebRequest.Create(uri);
             if (!string.IsNullOrWhiteSpace(token))
@@ -189,14 +196,10 @@ namespace SlackForDotNet
             using var reader = new StreamReader(stream);
             var json = await reader.ReadToEndAsync().ConfigureAwait(true);
 
-            Logger.LogDebug($"<< {json}");
+            Logger.LogDebug($"<<\n{JObject.Parse(json).ToString(Formatting.Indented)}\n");
 
-#if SYSTEM_JSON
-            return JsonSerializer.Deserialize<TResponse>(json);
-#else
-            return JsonConvert.DeserializeObject<TResponse>(json);
-#endif
-
+            return JsonConvert.DeserializeObject<TResponse>(json, 
+                MessageConverter, TextConverter, ElementConverter, LayoutConverter, ActionResponseConverter);
         }
 
         protected Uri GetSlackUri(string path, Parameters? getParameters = null)
@@ -205,7 +208,7 @@ namespace SlackForDotNet
             {
                 var args = HttpUtility.ParseQueryString("");
                 foreach (var pair in getParameters)
-                    args[pair.Key] = pair.Value?.ToString();
+                    args[pair.Key] = pair.Value;
                 return new Uri(Path.Combine(BaseSlackApi, path) + "?" + args);
             }
 

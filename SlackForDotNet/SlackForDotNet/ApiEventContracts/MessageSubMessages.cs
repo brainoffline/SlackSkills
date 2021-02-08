@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
+using SlackForDotNet.Surface;
+
 #pragma warning disable 8618 // Models are de-serialised, so shouldn't be null
 
 // ReSharper disable InconsistentNaming
@@ -15,13 +17,13 @@ namespace SlackForDotNet
     [ SlackMessage( "message", subType: "bot_message", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageBotmessage : MessageBase
     {
-        public string  bot_id                { get; set; }
-        public bool?   suppress_notification { get; set; }
-        public string  username              { get; set; }
-        public Bot     bot_profile           { get; set; }
-        public Block[] blocks                { get; set; }
-        public string  user_team             { get; set; }
-        public string  source_team           { get; set; }
+        public string       bot_id                { get; set; }
+        public bool?        suppress_notification { get; set; }
+        public string       username              { get; set; }
+        public Bot          bot_profile           { get; set; }
+        public List<Layout> blocks                { get; set; }
+        public string       user_team             { get; set; }
+        public string       source_team           { get; set; }
     }
 
     /// <summary>
@@ -40,14 +42,14 @@ namespace SlackForDotNet
     [ SlackMessage( "message", subType: "" ) ]
     public class MessageGeneral : MessageBase
     {
-        public Block[]?  blocks            { get; set; }
-        public string?   thread_ts         { get; set; }
-        public int?      reply_count       { get; set; }
-        public int?      reply_users_count { get; set; }
-        public string?   latest_reply      { get; set; }
-        public string[]? reply_users       { get; set; }
-        public bool?     subscribed        { get; set; }
-        public string?   last_read         { get; set; }
+        public List<Layout>? blocks            { get; set; }
+        public string?       thread_ts         { get; set; }
+        public int?          reply_count       { get; set; }
+        public int?          reply_users_count { get; set; }
+        public string?       latest_reply      { get; set; }
+        public string[]?     reply_users       { get; set; }
+        public bool?         subscribed        { get; set; }
+        public string?       last_read         { get; set; }
     }
 
 

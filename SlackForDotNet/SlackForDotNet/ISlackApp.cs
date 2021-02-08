@@ -6,6 +6,7 @@ using JetBrains.Annotations;
 
 using Microsoft.Extensions.Logging;
 
+using SlackForDotNet.Surface;
 using SlackForDotNet.WebApiContracts;
 
 namespace SlackForDotNet
@@ -31,23 +32,23 @@ namespace SlackForDotNet
         /// If you specify a user, then only that user will see the message
         /// To reply to a particular message, pass the thread timestamp
         /// </summary>
-        Task<MessageResponse?> Say([NotNull] List<Block> blocks,
+        Task<MessageResponse?> Say([NotNull] List<Layout> blocks,
                                       string                channel,
                                       string?               user = null,
                                       string?               ts   = null);
 
-        Task<MessageResponse?> Say([NotNull] Block block,
+        Task<MessageResponse?> Say([NotNull] Layout block,
                                       string          channel,
                                       string?         user = null,
                                       string?         ts   = null);
 
         Task<MessageResponse?> SayToChannel(string?      text,
-                                               List<Block>? blocks,
+                                               List<Layout>? blocks,
                                                string       channel,
                                                string?      threadTs = null);
 
         Task<MessageResponse?> SayToUser(string?      text,
-                                            List<Block>? blocks,
+                                            List<Layout>? blocks,
                                             string       channel,
                                             string       user,
                                             string?      threadTs = null);
@@ -67,5 +68,8 @@ namespace SlackForDotNet
         Channel? GetChannel( string id );
 
         string CommandHelp();
+
+        Task< ViewsPublishResponse? > PublishHomepage( SlackSurface hometab, AppHomeOpened msg );
+        void                          Update( SlackSurface          surface );
     }
 }

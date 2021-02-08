@@ -9,29 +9,34 @@
 
 namespace SlackForDotNet
 {
+    //[ AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false ) ]
+    //public class SlackBlockAttribute : Attribute
+    //{
+    //    public string Type { get; }
+        
+    //    public bool? BlockIdRequired { get; }
+
+    //    public SlackBlockAttribute( string type, bool blockIdRequired = false ) 
+    //    { 
+    //        Type = type;
+    //        BlockIdRequired = blockIdRequired;
+    //    }
+    //}
+
     [ AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false ) ]
-    public class SlackBlockAttribute : Attribute
+    public class SlackElementAttribute : Attribute
     {
         public string Type { get; }
-        
+
         public bool? BlockIdRequired { get; }
 
-        public SlackBlockAttribute( string type, bool blockIdRequired = false ) 
-        { 
-            Type = type;
-            BlockIdRequired = blockIdRequired;
-        }
-    }
-
-    [ AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false ) ]
-    public class SlackElementAttribute : SlackBlockAttribute
-    {
         public string? SubType { get; }
 
-        public SlackElementAttribute( string type, string? subtype = null, bool blockIdRequired = false ) 
-            : base( type, blockIdRequired )
+        public SlackElementAttribute( string type, string? subtype = null, bool blockIdRequired = false )
         {
+            Type            = type;
             SubType         = subtype;
+            BlockIdRequired = blockIdRequired;
         }
     }
 }

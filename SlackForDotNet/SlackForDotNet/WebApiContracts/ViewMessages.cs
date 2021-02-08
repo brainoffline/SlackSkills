@@ -30,6 +30,10 @@ namespace SlackForDotNet.WebApiContracts
         public string? hash { get; set; }
     }
 
+    public class ViewsPublishResponse : ViewResponse
+    {
+    }
+
     [ SlackMessage( "views.push",
                       apiType: Msg.BotToken | Msg.UserToken,
                       scopes: new[] { "bot" } ) ]

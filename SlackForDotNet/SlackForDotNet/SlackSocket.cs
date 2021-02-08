@@ -11,6 +11,7 @@ using JetBrains.Annotations;
 
 using Microsoft.Extensions.Logging;
 
+using Newtonsoft.Json.Linq;
 #if SYSTEM_JSON
 using System.Text.Json;
 #else
@@ -97,7 +98,7 @@ namespace SlackForDotNet
                                     if (json == null)
                                         continue;
                                     
-                                    _logger?.LogInformation($">>> {json}");
+                                    _logger?.LogInformation($">>>\n{json}\n");
 
                                     _socket.SendAsync(
                                         new ArraySegment<byte>(Encoding.UTF8.GetBytes(json)),
@@ -209,7 +210,8 @@ namespace SlackForDotNet
 
         void HandleMessageJson([NotNull] string json)
         {
-            _logger.LogDebug( "<<< " + json );
+            _logger.LogDebug( $"<<<\n{JObject.Parse( json ).ToString( Formatting.Indented )}\n" );
+
             var msg = MessageTypes.Expand( json );
             if (msg != null)
             {

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
+using SlackForDotNet.Surface;
+
 using static SlackForDotNet.SlackConstants;
 
 #pragma warning disable 8618 // Models are de-serialised, so shouldn't be null
@@ -92,7 +94,7 @@ namespace SlackForDotNet.WebApiContracts
         public bool? as_user { get; set; }
 
         
-        public List< Block >? blocks { get; set; }
+        public List< Layout >? blocks { get; set; }
 
         
         public string? icon_emoji { get; set; }
@@ -137,7 +139,7 @@ namespace SlackForDotNet.WebApiContracts
         public Attachment[]? attachments { get; set; }
 
         
-        public List< Block >? blocks { get; set; }
+        public List< Layout >? blocks { get; set; }
 
         
         public string? icon_emoji { get; set; }
@@ -202,7 +204,7 @@ namespace SlackForDotNet.WebApiContracts
         public Attachment[]? attachments { get; set; }
 
         
-        public Block[]? blocks { get; set; }
+        public List<Layout>? blocks { get; set; }
 
         
         public bool? link_names { get; set; }
@@ -310,7 +312,7 @@ namespace SlackForDotNet.WebApiContracts
         public Attachment[]? attachments { get; set; }
 
         
-        public Block[]? blocks { get; set; }
+        public List<Layout>? blocks { get; set; }
 
         
         public bool? link_names { get; set; }

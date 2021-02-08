@@ -12,10 +12,7 @@ using System.Collections.Generic;
 
 namespace SlackForDotNet
 {
-    public class EventsApi : Envelope<EventCallback> { }
-
-
-    [ SlackMessage( "event_callback" ) ]
+    [ SlackMessage( "events_api" ) ]
     public class EventCallback : Envelope< CallbackMessage > { }
 
     public class CallbackMessage : SlackMessage
