@@ -202,6 +202,14 @@ namespace SlackForDotNet
             KickSendQueue();
         }
 
+        public void Push< TRequest >( [ NotNull ] TRequest message )
+        {
+            var content = JsonConvert.SerializeObject(message);
+            _sendQueue.Enqueue(content);
+            KickSendQueue();
+
+        }
+
         public void Acknowledge( string envelopeId )
         {
             _sendQueue.Enqueue( JsonConvert.SerializeObject(new Acknowledge(envelopeId)) );
@@ -215,9 +223,16 @@ namespace SlackForDotNet
             var msg = MessageTypes.Expand( json );
             if (msg != null)
             {
-                if (msg is Envelope envelope)
-                    Acknowledge( envelope.envelope_id );
-                RaiseEventReceived( msg );
+                if (msg is Interactive interactive && interactive.payload?.type == "block_suggestion")
+                {
+                    RaiseEventReceived( msg );
+                }
+                else
+                {
+                    if (msg is Envelope envelope)
+                        Acknowledge( envelope.envelope_id );
+                    RaiseEventReceived( msg );
+                }
             }
         }
 

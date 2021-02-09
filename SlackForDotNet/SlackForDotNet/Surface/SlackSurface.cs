@@ -48,6 +48,73 @@ namespace SlackForDotNet.Surface
             UniqueId = Interlocked.Increment( ref _ids );
             UniqueValue = $"_{UniqueId}_";
         }
+        
+        private void UpdateState(object? values)
+        {
+            if (values == null) return;
+
+            var j = (JObject)values;
+            var state = j.ToObject<Dictionary<string, Dictionary<string, Surface.Element>>>();
+
+            if (state == null)
+                return;
+            foreach (var pair in state)
+            {
+                var layout = Layouts.FirstOrDefault(l => l.block_id == pair.Key);
+                var blockId = pair.Key;
+                foreach (var actionPair in pair.Value)
+                {
+                    var actionId = actionPair.Key;
+                    var actionValue = actionPair.Value;
+                    var type = actionValue.type;
+
+                    var element = FindElement(type, blockId, actionId);
+                    switch (element)
+                    {
+                        case TextInputElement textInput:
+                            var tia = (TextInputElement)actionValue;
+                            textInput.value = tia.value ?? "";
+                            break;
+                        case CheckboxesElement checkboxes:
+                            var ce = (CheckboxesElement)actionValue;
+                            checkboxes.selected_options = ce.selected_options;
+                            break;
+                        case RadioButtonsElement radioButtons:
+                            var re = (RadioButtonsElement)actionValue;
+                            radioButtons.selected_option = re.selected_option;
+                            break;
+                        case DatePickerElement datePicker:
+                            var dpe = (DatePickerElement)actionValue;
+                            datePicker.selected_date = dpe.selected_date;
+                            break;
+                        case TimePickerElement timePicker:
+                            var tpe = (TimePickerElement)actionValue;
+                            timePicker.selected_time = tpe.selected_time;
+                            break;
+                    }
+                }
+            }
+        
+        }
+
+        public void Process( BlockSuggestion blockSuggestion, string envelopeId )
+        {
+            TriggerId = blockSuggestion.trigger_id ?? "";
+            User      = blockSuggestion.user;
+            Team      = blockSuggestion.team;
+
+            UpdateState(blockSuggestion.state?.values ?? blockSuggestion.view?.state?.values);
+
+            var element = FindElement("", blockSuggestion.block_id, blockSuggestion.action_id);
+            switch (element)
+            {
+                case SelectExternalElement select:
+                    var options = select.Suggestions?.Invoke( blockSuggestion.value );
+                    if (options != null)
+                        App.Push( new AcknowledgeOptions( envelopeId, options )  );
+                    break;
+            }
+        }
 
         public void Process(BlockActions blockActions)
         {
@@ -58,37 +125,7 @@ namespace SlackForDotNet.Surface
             var view          = blockActions.view;
             var responseUrl   = blockActions.response_url;
             
-            // TODO: Update State
-
-            var values = blockActions.state?.values ?? blockActions.view?.state?.values;
-            if (values != null)
-            {
-                var j     = (JObject)values;
-                var state = j.ToObject< Dictionary< string, Dictionary<string, Surface.Element>>>();
-
-                if (state == null)
-                    return;
-                foreach (var pair in state)
-                {
-                    var layout    = Layouts.FirstOrDefault( l => l.block_id == pair.Key );
-                    var blockId   = pair.Key;
-                    foreach (var actionPair in pair.Value)
-                    {
-                        var actionId    = actionPair.Key;
-                        var actionValue = actionPair.Value;
-                        var type        = actionValue.type;
-
-                        var element = FindElement(type, blockId, actionId);
-                        switch(element)
-                        {
-                        case TextInputElement textInput:
-                            var tia = (TextInputElement)actionValue;
-                            textInput.value = tia.value ?? "";
-                            break;
-                        }
-                    }
-                }
-            }
+            UpdateState( blockActions.state?.values ?? blockActions.view?.state?.values );
             
             if (blockActions.actions != null)
             {
@@ -109,8 +146,20 @@ namespace SlackForDotNet.Surface
                             break;
                         case TextInputElement textInput:
                             var tia = (TextInputAction)slackAction;
-                            //textInput.value = tia.value ?? "";
+                            textInput.value = tia.value;
                             textInput.RaiseTextUpdatedEvent( tia.value ?? "" );
+                            break;
+                        case OverflowMenuElement overflowMenu:
+                            var ome = (OverflowMenuAction)slackAction;
+                            overflowMenu.selected_option = ome.selected_option;
+                            if (!string.IsNullOrEmpty(ome.selected_option?.value))
+                                overflowMenu.RaiseClicked(ome.selected_option.value);
+                            break;
+                        case SelectElement select:
+                            var sea = (SelectAction)slackAction;
+                            select.selected_option = sea.selected_option;
+                            if (!string.IsNullOrEmpty(sea.selected_option?.value))
+                                select.RaiseClicked(sea.selected_option.value);
                             break;
                     }
                 }

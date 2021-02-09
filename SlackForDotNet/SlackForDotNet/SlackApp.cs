@@ -205,7 +205,11 @@ namespace SlackForDotNet
 
         private void OnInteractive(ISlackApp app, Interactive msg)
         {
-            if (msg.payload != null)
+            if (msg.payload is BlockSuggestion suggestion)
+            {
+                OnBlockSuggestions( this, suggestion, msg.envelope_id);
+            }
+            else if (msg.payload != null)
                 RaiseApiEvent(msg.payload);
 
         }
@@ -213,8 +217,15 @@ namespace SlackForDotNet
         {
             var callbackId = msg.view?.callback_id;
 
-            var surface = _surfaces.FirstOrDefault( s => s.CallbackId == callbackId );
-            surface?.Process( msg );
+            var surface = _surfaces.FirstOrDefault(s => s.CallbackId == callbackId);
+            surface?.Process(msg);
+        }
+        private void OnBlockSuggestions(ISlackApp slackApp, BlockSuggestion msg, string envelopeId)
+        {
+            var callbackId = msg.view?.callback_id;
+
+            var surface = _surfaces.FirstOrDefault(s => s.CallbackId == callbackId);
+            surface?.Process(msg, envelopeId);
         }
 
         async Task<bool> GetSomeAccessTokens()
@@ -631,6 +642,14 @@ namespace SlackForDotNet
             return msgType.ApiType.HasFlag( Msg.GetMethod )
                        ? Get< TRequest, TResponse >( token, request )
                        : Post<TRequest, TResponse>(token, request);
+        }
+
+        public void Push<TRequest>(TRequest? request = default)
+        {
+            if (_slackClient == null) return;
+            if (request      == null) return;
+
+            _slackSocket?.Push( request );
         }
 
         private async Task<TResponse?> Get<TRequest,TResponse>(string token, TRequest? request = default)

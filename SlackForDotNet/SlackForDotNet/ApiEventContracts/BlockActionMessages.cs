@@ -42,4 +42,26 @@ namespace SlackForDotNet
         public List<ResponseUrl>?    response_urls         { get; set; }
         public List<ActionResponse>? actions               { get; set; }
     }
+
+    [SlackMessage("block_suggestion")]
+    public class BlockSuggestion : SlackMessage
+    {
+        public string             block_id              { get; set; }
+        public string             action_id             { get; set; }
+        public string             value                 { get; set; }
+        public Team?              team                  { get; set; }
+        public User?              user                  { get; set; }
+        public string?            api_app_id            { get; set; }
+        public string?            token                 { get; set; }
+        public Container?         container             { get; set; }
+        public Enterprise?        enterprise            { get; set; }
+        public bool?              is_enterprise_install { get; set; }
+        public View.State?        state                 { get; set; }
+        public string?            trigger_id            { get; set; }
+        public Channel?           channel               { get; set; }
+        public MessageBase?       message               { get; set; }
+        public View?              view                  { get; set; }
+        public string?            response_url          { get; set; }
+        public List<ResponseUrl>? response_urls         { get; set; }
+    }
 }

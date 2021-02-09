@@ -57,6 +57,8 @@ namespace SlackForDotNet
             where TRequest : SlackMessage
             where TResponse : MessageResponse;
 
+        void Push< TRequest >( TRequest request );
+
         /// <summary>
         /// Return Cached information about a user
         /// </summary>

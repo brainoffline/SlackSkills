@@ -40,8 +40,6 @@ namespace SlackForDotNet
         public bool?              is_enterprise_install { get; set; }
         public Enterprise?        enterprise            { get; set; }
     }
-
-    
     
     [SlackMessage( "view_closed")]
     public class ViewClosed : SlackMessage
@@ -51,5 +49,4 @@ namespace SlackForDotNet
         public View?        view       { get; set; }
         public bool?        is_cleared { get; set; }
     }
-
 }

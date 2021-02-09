@@ -92,7 +92,6 @@ namespace SlackForDotNet.Surface
     {
         public PlainText?      placeholder            { get; set; }
         public string?         initial_value          { get; set; }
-        [JsonIgnore]
         public string?         value                  { get; set; }
         public bool?           multiline              { get; set; }
         public int?            min_length             { get; set; }
@@ -112,6 +111,9 @@ namespace SlackForDotNet.Surface
         {
 
         }
+
+        public bool ShouldSerializevalue() =>
+            false;
         public virtual void RaiseTextUpdatedEvent(string str)
         {
             TextUpdatedEvent?.Invoke( this, str );
@@ -129,9 +131,10 @@ namespace SlackForDotNet.Surface
     /// </remarks>
     public class CheckboxesElement : Element
     {
-        public List< Option >  options         { get; set; } = new();
-        public List< Option >? initial_options { get; set; }
-        public Confirm?        confirm         { get; set; }
+        public List< Option >  options          { get; set; } = new();
+        public List< Option >? initial_options  { get; set; }
+        public List< Option >? selected_options { get; set; }
+        public Confirm? confirm { get;                 set; }
 
         public CheckboxesElement() : base("checkboxes", "" ) { }
         public CheckboxesElement( [ NotNull ] string id, IEnumerable<Option>? options = null ) : base( "checkboxes", id )
@@ -139,6 +142,9 @@ namespace SlackForDotNet.Surface
             if (options != null)
                 this.options.AddRange( options );
         }
+
+        public bool ShouldSerializeselected_options() =>
+            false;
 
         public CheckboxesElement Add( Option option )
         {
@@ -160,6 +166,7 @@ namespace SlackForDotNet.Surface
     {
         public List<Option>  options         { get; set; } = new();
         public List<Option>? initial_options { get; set; }
+        public Option?       selected_option { get; set; }
         public Confirm?      confirm         { get; set; }
 
         public RadioButtonsElement() : base("radio_buttons", "") { }
@@ -168,6 +175,9 @@ namespace SlackForDotNet.Surface
             if (options != null)
                 this.options.AddRange(options);
         }
+
+        public bool ShouldSerializeselected_option() =>
+            false;
 
         public RadioButtonsElement Add(Option option)
         {
@@ -189,10 +199,11 @@ namespace SlackForDotNet.Surface
     {
         private const string     dateFormat = "yyyy-MM-dd";
         
-        public PlainText? placeholder  { get; set; }
+        public PlainText? placeholder   { get; set; }
         /// <summary>YYYY-MM-DD</summary>
-        public string?    initial_date { get; set; }
-        public Confirm?   confirm      { get; set; }
+        public string?    initial_date  { get; set; }
+        public string?    selected_date { get; set; }
+        public Confirm?   confirm       { get; set; }
 
         [JsonIgnore]
         [System.Text.Json.Serialization.JsonIgnore]
@@ -203,6 +214,9 @@ namespace SlackForDotNet.Surface
         }
         public DatePickerElement() : base("datepicker", "") { }
         public DatePickerElement( [ NotNull ] string id ) : base( "datepicker", id ) { }
+
+        public bool ShouldSerializeselected_date() =>
+            false;
 
         private void SetInitialDate( DateTime date ) =>
             initial_date = date.ToString( dateFormat );
@@ -231,8 +245,9 @@ namespace SlackForDotNet.Surface
 
         public PlainText? placeholder  { get; set; }
         /// <summary>HH:mm</summary>
-        public string?    initial_time { get; set; }
-        public Confirm?   confirm      { get; set; }
+        public string? initial_time { get;  set; }
+        public string? selected_time { get; set; }
+        public Confirm? confirm      { get; set; }
 
         [JsonIgnore]
         [System.Text.Json.Serialization.JsonIgnore]
@@ -244,6 +259,9 @@ namespace SlackForDotNet.Surface
 
         public TimePickerElement() : base("timepicker", "") { }
         public TimePickerElement([NotNull] string id) : base("timepicker", id) { }
+
+        public bool ShouldSerializeselected_time() =>
+            false;
 
         private void SetInitialTime(DateTime time) =>
             initial_time = time.ToString(timeFormat);
@@ -268,9 +286,19 @@ namespace SlackForDotNet.Surface
     /// </remarks>
     public class OverflowMenuElement : Element
     {
-        public List<Option> options { get; set; } = new();
-        public Confirm?     confirm { get; set; }
+        public List<Option> options         { get; set; } = new();
+        public Option?      selected_option { get; set; }
+        public Confirm?     confirm         { get; set; }
 
+        private event EventHandler<string> ClickEvent;
+
+        public EventHandler<string> Clicked
+        {
+            set => ClickEvent += value;
+        }
+
+        public bool ShouldSerializeselected_option() =>
+            false;
 
         public OverflowMenuElement() : base("overflow", "") { }
         public OverflowMenuElement( [ NotNull ] string id ) : base( "overflow", id ) { }
@@ -282,6 +310,10 @@ namespace SlackForDotNet.Surface
             return this;
         }
 
+        public void RaiseClicked(string id)
+        {
+            ClickEvent?.Invoke(this, id);
+        }
     }
 
     /// <summary>
@@ -295,11 +327,19 @@ namespace SlackForDotNet.Surface
     /// </remarks>
     public class SelectElement : Element
     {
-        public PlainText          placeholder    { get; set; }
-        public List<Option>       options        { get; set; } = new();
-        public List<OptionGroup>? option_groups  { get; set; }
-        public Option?            initial_option { get; set; }
-        public Confirm?           confirm        { get; set; }
+        public PlainText          placeholder      { get; set; }
+        public List<Option>       options          { get; set; } = new();
+        public List<OptionGroup>? option_groups    { get; set; }
+        public Option?            initial_option   { get; set; }
+        public Option?            selected_option { get; set; }
+        public Confirm?           confirm          { get; set; }
+
+        private event EventHandler<string> ClickEvent;
+
+        public EventHandler<string> Clicked
+        {
+            set => ClickEvent += value;
+        }
 
         public SelectElement() : base("static_select", "") { }
         public SelectElement( [ NotNull ] string id, PlainText placeholder ) 
@@ -307,6 +347,9 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_option() =>
+            false;
 
         public SelectElement Add(Option option)
         {
@@ -321,6 +364,12 @@ namespace SlackForDotNet.Surface
 
             return this;
         }
+
+        public void RaiseClicked(string id)
+        {
+            ClickEvent?.Invoke(this, id);
+        }
+
     }
 
     /// <summary>
@@ -335,11 +384,26 @@ namespace SlackForDotNet.Surface
     public class SelectExternalElement : Element
     {
         public PlainText          placeholder      { get; set; }
-        public List<Option>?      options          { get; set; } = new();
-        public List<OptionGroup>? option_groups    { get; set; }
         public Option?            initial_option   { get; set; }
+        public Option?            selected_option  { get; set; }
         public int?               min_query_length { get; set; }
         public Confirm?           confirm          { get; set; }
+
+        public delegate List< Option > SugestionsHandler( string value );
+        
+        [JsonIgnore]
+        public SugestionsHandler Suggestions { get; set; }
+
+        private event EventHandler<string> ClickEvent;
+        public EventHandler<string> Clicked
+        {
+            set => ClickEvent += value;
+        }
+        public void RaiseClicked(string id)
+        {
+            ClickEvent?.Invoke(this, id);
+        }
+
 
         public SelectExternalElement() : base("external_select", "") { }
         public SelectExternalElement([NotNull] string id, PlainText placeholder)
@@ -347,6 +411,10 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_option() =>
+            false;
+
     }
 
     /// <summary>
@@ -360,9 +428,10 @@ namespace SlackForDotNet.Surface
     /// </remarks>
     public class UserSelectElement : Element
     {
-        public PlainText placeholder  { get; set; }
-        public string?   initial_user { get; set; }
-        public Confirm?  confirm      { get; set; }
+        public PlainText placeholder   { get; set; }
+        public string?   initial_user  { get; set; }
+        public string?   selected_user { get; set; }
+        public Confirm?  confirm       { get; set; }
 
         public UserSelectElement() : base("user_select", "") { }
         public UserSelectElement([NotNull] string id, PlainText placeholder)
@@ -370,6 +439,10 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_user() =>
+            false;
+
     }
 
     /// <summary>
@@ -386,6 +459,7 @@ namespace SlackForDotNet.Surface
     {
         public PlainText placeholder                     { get; set; }
         public string?   initial_conversation            { get; set; }
+        public string?   selected_conversation            { get; set; }
         public bool?     default_to_current_conversation { get; set; }
         public Confirm?  confirm                         { get; set; }
         public bool?     response_url_enabled            { get; set; }
@@ -397,8 +471,12 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_conversation() =>
+            false;
+
     }
-    
+
     /// <summary>
     ///     Select Channel Element (dropdown)
     /// </summary>
@@ -413,6 +491,7 @@ namespace SlackForDotNet.Surface
     {
         public PlainText placeholder          { get; set; }
         public string?   initial_channel      { get; set; }
+        public string?   selected_channel     { get; set; }
         public Confirm?  confirm              { get; set; }
         public bool?     response_url_enabled { get; set; }
 
@@ -422,6 +501,9 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_channel() =>
+            false;
     }
 
 
@@ -444,6 +526,7 @@ namespace SlackForDotNet.Surface
         public List<Option>       options            { get; set; } = new();
         public List<OptionGroup>? option_groups      { get; set; }
         public List<Option>?      initial_options    { get; set; }
+        public List<Option>?      selected_options   { get; set; }
         public Confirm?           confirm            { get; set; }
         public int?               max_selected_items { get; set; }
 
@@ -454,6 +537,9 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_options() =>
+            false;
 
         public MultiSelectElement Add(Option option)
         {
@@ -492,6 +578,7 @@ namespace SlackForDotNet.Surface
         public List<Option>?      options            { get; set; } = new();
         public List<OptionGroup>? option_groups      { get; set; }
         public List<Option>?      initial_options    { get; set; }
+        public List<Option>?      selected_options   { get; set; }
         public int?               min_query_length   { get; set; }
         public Confirm?           confirm            { get; set; }
         public int?               max_selected_items { get; set; }
@@ -502,6 +589,10 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_options() =>
+            false;
+
     }
 
     /// <summary>
@@ -517,6 +608,7 @@ namespace SlackForDotNet.Surface
     {
         public PlainText     placeholder        { get; set; }
         public List<string>? initial_users      { get; set; }
+        public List<string>? selected_users     { get; set; }
         public Confirm?      confirm            { get; set; }
         public int?          max_selected_items { get; set; }
 
@@ -526,6 +618,10 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_users() =>
+            false;
+
     }
 
     /// <summary>
@@ -541,7 +637,8 @@ namespace SlackForDotNet.Surface
     public class MultiConversationSelectElement : Element
     {
         public PlainText     placeholder                     { get; set; }
-        public List<string>? initial_conversation            { get; set; }
+        public List<string>? initial_conversations           { get; set; }
+        public List<string>? selected_conversations          { get; set; }
         public bool?         default_to_current_conversation { get; set; }
         public Confirm?      confirm                         { get; set; }
         public bool?         response_url_enabled            { get; set; }
@@ -554,6 +651,10 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_conversations() =>
+            false;
+
     }
 
     /// <summary>
@@ -568,7 +669,8 @@ namespace SlackForDotNet.Surface
     public class MultiChannelSelectElement : Element
     {
         public PlainText     placeholder          { get; set; }
-        public List<string>? initial_channel      { get; set; }
+        public List<string>? initial_channels     { get; set; }
+        public List<string>? selected_channels    { get; set; }
         public Confirm?      confirm              { get; set; }
         public bool?         response_url_enabled { get; set; }
         public int?          max_selected_items   { get; set; }
@@ -579,6 +681,9 @@ namespace SlackForDotNet.Surface
         {
             this.placeholder = placeholder;
         }
+
+        public bool ShouldSerializeselected_channels() =>
+            false;
     }
 
     public class ElementConverter : JsonConverter<Element?>
