@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -16,15 +15,9 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 using SlackForDotNet.Surface;
-#if SYSTEM_JSON
-using System.Text.Json;
-#else
 using Newtonsoft.Json;
-#endif
 
 using SlackForDotNet.WebApiContracts;
-
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace SlackForDotNet
 {
@@ -111,19 +104,15 @@ namespace SlackForDotNet
             HttpRequestMessage webRequest = new HttpRequestMessage(HttpMethod.Post, uri);
             if (postJson)
             {
-#if SYSTEM_JSON
-                var content = JsonSerializer.Serialize(request, JsonHelpers.DefaultJsonOptions);
-#else
                 var content = JsonConvert.SerializeObject(request);
-#endif
-                Logger.LogDebug($">>\n{uri}\n{content}");
+                Logger.LogDebug($"˄˄\n{uri}\n{content}");
 
                 webRequest.Content = new StringContent(content, Encoding.UTF8, "application/json");
             }
             else
             {
                 var parameters = new Parameters(request);
-                Logger.LogDebug($">>\n{uri} {parameters}\n");
+                Logger.LogDebug($"˄˄\n{uri} {parameters}\n");
 
                 webRequest.Content = new FormUrlEncodedContent(parameters);
             }
@@ -133,7 +122,7 @@ namespace SlackForDotNet
             var webResponse = await _httpClient.SendAsync(webRequest);
             var json = await webResponse.Content.ReadAsStringAsync();
 
-            Logger.LogDebug($"<<\n{JObject.Parse(json) .ToString(Formatting.Indented)}\n");
+            Logger.LogDebug($"VV\n{JObject.Parse(json) .ToString(Formatting.Indented)}\n");
 
             return JsonConvert.DeserializeObject<TResponse>(json, 
                 MessageConverter, TextConverter, ElementConverter, LayoutConverter, ActionResponseConverter);
@@ -182,7 +171,7 @@ namespace SlackForDotNet
 
             var uri = GetSlackUri(responseAttrs.Type, queryParameters);
 
-            Logger.LogInformation($">>\n{uri}\n");
+            Logger.LogInformation($"˄˄\n{uri}\n");
 
             var webRequest = (HttpWebRequest)WebRequest.Create(uri);
             if (!string.IsNullOrWhiteSpace(token))
@@ -196,7 +185,7 @@ namespace SlackForDotNet
             using var reader = new StreamReader(stream);
             var json = await reader.ReadToEndAsync().ConfigureAwait(true);
 
-            Logger.LogDebug($"<<\n{JObject.Parse(json).ToString(Formatting.Indented)}\n");
+            Logger.LogDebug($"VV\n{JObject.Parse(json).ToString(Formatting.Indented)}\n");
 
             return JsonConvert.DeserializeObject<TResponse>(json, 
                 MessageConverter, TextConverter, ElementConverter, LayoutConverter, ActionResponseConverter);

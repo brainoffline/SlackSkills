@@ -12,11 +12,7 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 
 using SlackForDotNet.Surface;
-#if SYSTEM_JSON
-using JsonSerializer = System.Text.Json.JsonSerializer;
-#else
 using Newtonsoft.Json;
-#endif
 
 using SlackForDotNet.WebApiContracts;
 
@@ -50,15 +46,15 @@ namespace SlackForDotNet
         public string             AppId  { get; set; } = "";
         public string             TeamId { get; set; } = "";
 
-        private bool                  _socketModeAvailable;
-        private bool                  _getBotAccessToken;
-        private bool                  _getUserAccessToken;
-        private SlackClient?          _slackClient;
-        private SlackSocket?          _slackSocket;
-        private OAuthAccessResponse2? _oauth;
-        private List< User >          _users    = new();
-        private List< Channel >       _channels = new ();
-        private List< UserGroup >?    _userGroups;
+        private          bool                  _socketModeAvailable;
+        private          bool                  _getBotAccessToken;
+        private          bool                  _getUserAccessToken;
+        private          SlackClient?          _slackClient;
+        private          SlackSocket?          _slackSocket;
+        private          OAuthAccessResponse2? _oauth;
+        private readonly List< User >          _users      = new();
+        private readonly List< Channel >       _channels   = new();
+        private readonly List< UserGroup >?    _userGroups = new();
 
 
         private readonly List< ApiEventHandler > _apiEventHandlers = new();
@@ -69,16 +65,12 @@ namespace SlackForDotNet
         static SlackApp()
         {
             MessageTypes.RegisterAll();
-
-#if SYSTEM_JSON
-#else
             JsonConvert.DefaultSettings = () =>
                                               new JsonSerializerSettings
                                               {
                                                   Formatting        = Formatting.Indented,
                                                   NullValueHandling = NullValueHandling.Ignore
                                               };
-#endif
         }
         
         bool IsValid()
@@ -170,13 +162,11 @@ namespace SlackForDotNet
                 _slackSocket = new SlackSocket( _slackClient, Logger )
                                {
                                #if DEBUG_SHORT_CONNECTIONS
-                                   ShortConnections = true
+                                   ShortConnections = true  // Useful for debugging websocket closures
                                #endif
                                };
                 _slackSocket.ApiEventReceived += ( sender, message ) => { RaiseApiEvent( message ); };
                 await _slackSocket.ConnectWebSocket(AppLevelToken!);
-
-                _slackSocket.SendRequest(new Ping());
             }
 
             return true;
@@ -188,8 +178,6 @@ namespace SlackForDotNet
             
             if (_slackSocket != null)
                 await _slackSocket.ConnectWebSocket(AppLevelToken!);
-            
-            _slackSocket?.SendRequest(new Ping());
         }
 
         private void OnEventsApi( ISlackApp app, EventCallback msg )
@@ -206,12 +194,9 @@ namespace SlackForDotNet
         private void OnInteractive(ISlackApp app, Interactive msg)
         {
             if (msg.payload is BlockSuggestion suggestion)
-            {
-                OnBlockSuggestions( this, suggestion, msg.envelope_id);
-            }
+                OnBlockSuggestions( this, suggestion, msg.envelope_id );
             else if (msg.payload != null)
                 RaiseApiEvent(msg.payload);
-
         }
         private void OnBlockActions(ISlackApp slackApp, BlockActions msg)
         {
@@ -309,14 +294,14 @@ namespace SlackForDotNet
         /// <summary>
         /// Register a Command callback (e.g. /SlackDK with some text)
         /// </summary>
-        public void OnCommand( string command, Action< ISlackApp, SlackCommand > action )
+        public void OnCommand( string command, Action< ISlackApp, SlashCommandPayload > action )
         {
             _commandHandlers.Add(new CommandHandler(command, action));
         }
         
         record CommandHandler( 
             string Command, 
-            Action< ISlackApp, SlackCommand > CommandAction );
+            Action< ISlackApp, SlashCommandPayload > CommandAction );
 
         record ApiEventHandler( string?                     MessageType    = null,
                                 string?                     MessageSubType = null,
@@ -570,11 +555,7 @@ namespace SlackForDotNet
             var response = await _slackClient.Post<ChatPostMessage, ChatPostMessageResponse>(token, chat);
             if (response == null || response.ok == false)
             {
-#if SYSTEM_JSON
-                Logger.LogError(JsonSerializer.Serialize(response, JsonHelpers.DefaultJsonOptions));
-#else
                 Logger.LogError( JsonConvert.SerializeObject( response, Formatting.Indented ) );
-#endif
             }
 
             return response;
@@ -605,11 +586,7 @@ namespace SlackForDotNet
                     UserAccessToken ?? BotAccessToken ?? "", chat);
             if (response != null && response.ok == false)
             {
-#if SYSTEM_JSON
-                Logger.LogError(JsonSerializer.Serialize(response, JsonHelpers.DefaultJsonOptions));
-#else
                 Logger.LogError(JsonConvert.SerializeObject(response));
-#endif
             }
 
             return response;
@@ -661,11 +638,7 @@ namespace SlackForDotNet
             var response = await _slackClient.GetRequest<TRequest,TResponse>( token, request);
             if (response != null && response.ok == false)
             {
-#if SYSTEM_JSON
-                Logger.LogError(JsonSerializer.Serialize(response, JsonHelpers.DefaultJsonOptions));
-#else
                 Logger.LogError( JsonConvert.SerializeObject( response ) );
-#endif
             }
 
             return response;
@@ -681,11 +654,7 @@ namespace SlackForDotNet
                     token, request);
             if (response != null && response.ok == false)
             {
-#if SYSTEM_JSON
-                Logger.LogError(JsonSerializer.Serialize(response, JsonHelpers.DefaultJsonOptions));
-#else
                 Logger.LogError(JsonConvert.SerializeObject(response));
-#endif
             }
 
             return response;

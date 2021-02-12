@@ -13,6 +13,9 @@ using Newtonsoft.Json.Linq;
 
 namespace SlackForDotNet.Surface
 {
+    public delegate Options SuggestionsHandler(string value);
+
+    
     [JsonConverter( typeof(ElementConverter))]
     public abstract class Element
     {
@@ -389,10 +392,8 @@ namespace SlackForDotNet.Surface
         public int?               min_query_length { get; set; }
         public Confirm?           confirm          { get; set; }
 
-        public delegate List< Option > SugestionsHandler( string value );
-        
         [JsonIgnore]
-        public SugestionsHandler Suggestions { get; set; }
+        public SuggestionsHandler Suggestions { get; set; }
 
         private event EventHandler<string> ClickEvent;
         public EventHandler<string> Clicked
@@ -426,15 +427,25 @@ namespace SlackForDotNet.Surface
     ///     Works with
     ///         Section, Action, Input
     /// </remarks>
-    public class UserSelectElement : Element
+    public class UsersSelectElement : Element
     {
         public PlainText placeholder   { get; set; }
         public string?   initial_user  { get; set; }
         public string?   selected_user { get; set; }
         public Confirm?  confirm       { get; set; }
 
-        public UserSelectElement() : base("user_select", "") { }
-        public UserSelectElement([NotNull] string id, PlainText placeholder)
+        private event EventHandler<string> ClickEvent;
+        public EventHandler<string> Clicked
+        {
+            set => ClickEvent += value;
+        }
+        public void RaiseClicked(string id)
+        {
+            ClickEvent?.Invoke(this, id);
+        }
+
+        public UsersSelectElement() : base("users_select", "") { }
+        public UsersSelectElement([NotNull] string id, PlainText placeholder)
             : base("users_select", id)
         {
             this.placeholder = placeholder;
@@ -465,6 +476,16 @@ namespace SlackForDotNet.Surface
         public bool?     response_url_enabled            { get; set; }
         public Filter?   filter                          { get; set; }
 
+        private event EventHandler<string> ClickEvent;
+        public EventHandler<string> Clicked
+        {
+            set => ClickEvent += value;
+        }
+        public void RaiseClicked(string id)
+        {
+            ClickEvent?.Invoke(this, id);
+        }
+
         public ConversationSelectElement() : base("conversations_select", "") { }
         public ConversationSelectElement([NotNull] string id, PlainText placeholder)
             : base("conversations_select", id)
@@ -494,6 +515,17 @@ namespace SlackForDotNet.Surface
         public string?   selected_channel     { get; set; }
         public Confirm?  confirm              { get; set; }
         public bool?     response_url_enabled { get; set; }
+
+
+        private event EventHandler<string> ClickEvent;
+        public EventHandler<string> Clicked
+        {
+            set => ClickEvent += value;
+        }
+        public void RaiseClicked(string id)
+        {
+            ClickEvent?.Invoke(this, id);
+        }
 
         public ChannelSelectElement() : base("channels_select", "") { }
         public ChannelSelectElement([NotNull] string id, PlainText placeholder)
@@ -530,6 +562,15 @@ namespace SlackForDotNet.Surface
         public Confirm?           confirm            { get; set; }
         public int?               max_selected_items { get; set; }
 
+        private event EventHandler<List<Option>> ClickEvent;
+        public EventHandler<List<Option>> Clicked
+        {
+            set => ClickEvent += value;
+        }
+        public void RaiseClicked(List<Option> options)
+        {
+            ClickEvent?.Invoke(this, options);
+        }
 
         public MultiSelectElement() : base("multi_static_select", "") { }
         public MultiSelectElement([NotNull] string id, PlainText placeholder)
@@ -583,6 +624,19 @@ namespace SlackForDotNet.Surface
         public Confirm?           confirm            { get; set; }
         public int?               max_selected_items { get; set; }
 
+        [JsonIgnore]
+        public SuggestionsHandler Suggestions { get; set; }
+
+        private event EventHandler<List<Option>> ClickEvent;
+        public EventHandler<List<Option>> Clicked
+        {
+            set => ClickEvent += value;
+        }
+        public void RaiseClicked(List<Option> options)
+        {
+            ClickEvent?.Invoke(this, options);
+        }
+
         public MultiSelectExternalElement() : base("multi_external_select", "") { }
         public MultiSelectExternalElement([NotNull] string id, PlainText placeholder)
             : base("multi_external_select", id)
@@ -590,6 +644,8 @@ namespace SlackForDotNet.Surface
             this.placeholder = placeholder;
         }
 
+        public bool ShouldSerializeoptions() =>
+            false;
         public bool ShouldSerializeselected_options() =>
             false;
 
@@ -611,6 +667,16 @@ namespace SlackForDotNet.Surface
         public List<string>? selected_users     { get; set; }
         public Confirm?      confirm            { get; set; }
         public int?          max_selected_items { get; set; }
+
+        private event EventHandler<List<string>> ClickEvent;
+        public EventHandler<List<string>> Clicked
+        {
+            set => ClickEvent += value;
+        }
+        public void RaiseClicked(List<string> ids)
+        {
+            ClickEvent?.Invoke(this, ids);
+        }
 
         public MultiUserSelectElement() : base("multi_users_select", "") { }
         public MultiUserSelectElement([NotNull] string id, PlainText placeholder)
@@ -645,6 +711,16 @@ namespace SlackForDotNet.Surface
         public Filter?       filter                          { get; set; }
         public int?          max_selected_items              { get; set; }
 
+        private event EventHandler<List<string>> ClickEvent;
+        public EventHandler<List<string>> Clicked
+        {
+            set => ClickEvent += value;
+        }
+        public void RaiseClicked(List<string> ids)
+        {
+            ClickEvent?.Invoke(this, ids);
+        }
+
         public MultiConversationSelectElement() : base("multi_conversations_select", "") { }
         public MultiConversationSelectElement([NotNull] string id, PlainText placeholder)
             : base("multi_conversations_select", id)
@@ -674,6 +750,16 @@ namespace SlackForDotNet.Surface
         public Confirm?      confirm              { get; set; }
         public bool?         response_url_enabled { get; set; }
         public int?          max_selected_items   { get; set; }
+
+        private event EventHandler<List<string>> ClickEvent;
+        public EventHandler<List<string>> Clicked
+        {
+            set => ClickEvent += value;
+        }
+        public void RaiseClicked(List<string> ids)
+        {
+            ClickEvent?.Invoke(this, ids);
+        }
 
         public MultiChannelSelectElement() : base("multi_channels_select", "") { }
         public MultiChannelSelectElement([NotNull] string id, PlainText placeholder)
@@ -742,7 +828,7 @@ namespace SlackForDotNet.Surface
                 existingValue = new SelectExternalElement();
                 break;
             case "users_select":
-                existingValue = new UserSelectElement();
+                existingValue = new UsersSelectElement();
                 break;
             case "conversations_select":
                 existingValue = new ConversationSelectElement();

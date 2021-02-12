@@ -108,11 +108,20 @@ namespace SlackForDotNet.Surface
             var element = FindElement("", blockSuggestion.block_id, blockSuggestion.action_id);
             switch (element)
             {
-                case SelectExternalElement select:
+            case SelectExternalElement select:
+                {
                     var options = select.Suggestions?.Invoke( blockSuggestion.value );
                     if (options != null)
-                        App.Push( new AcknowledgeOptions( envelopeId, options )  );
-                    break;
+                        App.Push( new Acknowledge< Options > { envelope_id = envelopeId, payload = options } );
+                }
+                break;
+            case MultiSelectExternalElement multiSelect:
+                {
+                    var options = multiSelect.Suggestions?.Invoke( blockSuggestion.value );
+                    if (options != null)
+                        App.Push( new Acknowledge< Options > { envelope_id = envelopeId, payload = options } );
+                }
+                break;
             }
         }
 
@@ -150,16 +159,70 @@ namespace SlackForDotNet.Surface
                             textInput.RaiseTextUpdatedEvent( tia.value ?? "" );
                             break;
                         case OverflowMenuElement overflowMenu:
-                            var ome = (OverflowMenuAction)slackAction;
-                            overflowMenu.selected_option = ome.selected_option;
-                            if (!string.IsNullOrEmpty(ome.selected_option?.value))
-                                overflowMenu.RaiseClicked(ome.selected_option.value);
+                            var oma = (OverflowMenuAction)slackAction;
+                            overflowMenu.selected_option = oma.selected_option;
+                            if (!string.IsNullOrEmpty(oma.selected_option?.value))
+                                overflowMenu.RaiseClicked(oma.selected_option.value);
                             break;
                         case SelectElement select:
-                            var sea = (SelectAction)slackAction;
-                            select.selected_option = sea.selected_option;
+                            var sa = (SelectAction)slackAction;
+                            select.selected_option = sa.selected_option;
+                            if (!string.IsNullOrEmpty(sa.selected_option?.value))
+                                select.RaiseClicked(sa.selected_option.value);
+                            break;
+                        case SelectExternalElement selectExternal:
+                            var sea = (SelectExternalAction)slackAction;
+                            selectExternal.selected_option = sea.selected_option;
                             if (!string.IsNullOrEmpty(sea.selected_option?.value))
-                                select.RaiseClicked(sea.selected_option.value);
+                                selectExternal.RaiseClicked(sea.selected_option.value);
+                            break;
+                        case UsersSelectElement userSelect:
+                            var usa = (UserSelectAction)slackAction;
+                            userSelect.selected_user = usa.selected_user;
+                            if (!string.IsNullOrEmpty(usa.selected_user))
+                                userSelect.RaiseClicked(usa.selected_user);
+                            break;
+                        case ConversationSelectElement conversationSelect:
+                            var csa = (ConversationSelectAction)slackAction;
+                            conversationSelect.selected_conversation = csa.selected_conversation;
+                            if (!string.IsNullOrEmpty(csa.selected_conversation))
+                                conversationSelect.RaiseClicked(csa.selected_conversation);
+                            break;
+                        case ChannelSelectElement channelSelect:
+                            var chsa = (ChannelSelectAction)slackAction;
+                            channelSelect.selected_channel = chsa.selected_channel;
+                            if (!string.IsNullOrEmpty(chsa.selected_channel))
+                                channelSelect.RaiseClicked(chsa.selected_channel);
+                            break;
+                        case MultiSelectElement multiSelect:
+                            var msa = (MultiSelectAction)slackAction;
+                            multiSelect.selected_options = msa.selected_options;
+                            if (msa.selected_options != null)
+                                multiSelect.RaiseClicked(msa.selected_options);
+                            break;
+                        case MultiSelectExternalElement multiSelectExternal:
+                            var msea = (MultiSelectExternalAction)slackAction;
+                            multiSelectExternal.selected_options = msea.selected_options;
+                            if (msea.selected_options != null)
+                                multiSelectExternal.RaiseClicked(msea.selected_options);
+                            break;
+                        case MultiUserSelectElement multiUserSelect:
+                            var musa = (MultiUserSelectAction)slackAction;
+                            multiUserSelect.selected_users = musa.selected_users;
+                            if (musa.selected_users != null)
+                                multiUserSelect.RaiseClicked(musa.selected_users);
+                            break;
+                        case MultiConversationSelectElement multiConversationSelect:
+                            var mcsa = (MultiConversationSelectAction)slackAction;
+                            multiConversationSelect.selected_conversations = mcsa.selected_conversations;
+                            if (mcsa.selected_conversations != null)
+                                multiConversationSelect.RaiseClicked(mcsa.selected_conversations);
+                            break;
+                        case MultiChannelSelectElement multiChannelSelect:
+                            var mchsa = (MultiChannelSelectAction)slackAction;
+                            multiChannelSelect.selected_channels = mchsa.selected_channels;
+                            if (mchsa.selected_channels != null)
+                                multiChannelSelect.RaiseClicked(mchsa.selected_channels);
                             break;
                     }
                 }

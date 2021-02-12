@@ -73,5 +73,7 @@ namespace SlackForDotNet
 
         Task< ViewsPublishResponse? > PublishHomepage( SlackSurface hometab, AppHomeOpened msg );
         void                          Update( SlackSurface          surface );
+
+        Task Reconnect();
     }
 }

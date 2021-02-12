@@ -19,7 +19,7 @@ namespace SampleCLI
             Console.WriteLine( "Slack Surface CLI" );
 
             _app.OnMessage<AppHomeOpened>(OnHomeOpenedSurface);
-            _app.OnMessage<SlashCommands>(OnSlashCommandSurface);
+            _app.OnMessage<SlashCommand>(OnSlashCommandSurface);
         }
 
         private async void OnHomeOpenedSurface( ISlackApp slackApp, AppHomeOpened msg )
@@ -29,14 +29,11 @@ namespace SampleCLI
             await _app.PublishHomepage( _home, msg );
         }
 
-        private void OnSlashCommandSurface(ISlackApp slackApp, SlashCommands msg)
+        private void OnSlashCommandSurface(ISlackApp slackApp, SlashCommand msg)
         {
-            
         }
     }
-
-
-
+    
     public class HametabSurface : SlackSurface
     {
         private SectionLayout _statusLayout;
@@ -110,12 +107,7 @@ namespace SampleCLI
                                                       }
                                         }
                           },
-                          new InputLayout
-                          {
-                              block_id = "date-block",
-                              label = "What date will it happen",
-                              element = new DatePickerElement("what-date")
-                          },
+                          new InputLayout { block_id = "date-block", label = "What date will it happen", element = new DatePickerElement( "what-date" ) },
                           // still in beta
                           //new InputLayout
                           //{
@@ -125,28 +117,28 @@ namespace SampleCLI
                           new SectionLayout
                           {
                               block_id = "overflow-block",
-                              text = new Markdown("Whatever you do, :x: do not select a menu item"),
-                              accessory = new OverflowMenuElement("what-overflow")
-                              {
-                                  action_id = "what-overflow",
-                                  options = new List< Option >
-                                            {
-                                                new Option( "Erase Everything", "over-erase" ),
-                                                new Option( "Delete something", "over-delete" ),
-                                                new Option( "Update whatever", "over-update" ),
-                                            },
-                                  Clicked = ( s, id ) =>
-                                            {
-                                                _statusLayout.text =
-                                                    new Markdown( $"I told ya bro. I'm listening. `{id}`" );
-                                                slackApp.Update( this );
-                                            }
-                              }
+                              text     = new Markdown( "Whatever you do, :x: do not select a menu item" ),
+                              accessory = new OverflowMenuElement( "what-overflow" )
+                                          {
+                                              action_id = "what-overflow",
+                                              options = new List< Option >
+                                                        {
+                                                            new Option( "Erase Everything", "over-erase" ),
+                                                            new Option( "Delete something", "over-delete" ),
+                                                            new Option( "Update whatever",  "over-update" ),
+                                                        },
+                                              Clicked = ( s, id ) =>
+                                                        {
+                                                            _statusLayout.text =
+                                                                new Markdown( $"I told ya bro. I'm listening. `{id}`" );
+                                                            slackApp.Update( this );
+                                                        }
+                                          }
                           },
                           new SectionLayout
                           {
                               block_id = "select-block",
-                              text     = new Markdown("Fixed list for selection"),
+                              text     = new Markdown( "Fixed list for selection" ),
                               accessory = new SlackForDotNet.Surface.SelectElement
                                           {
                                               action_id = "what-selection",
@@ -155,8 +147,8 @@ namespace SampleCLI
                                                             new Option( "One",   "select-one" ),
                                                             new Option( "Two",   "select-two" ),
                                                             new Option( "Three", "select-three" ),
-                                                            new Option( "Four", "select-four" ),
-                                                            new Option( "Five", "select-five" ),
+                                                            new Option( "Four",  "select-four" ),
+                                                            new Option( "Five",  "select-five" ),
                                                         },
                                               Clicked = ( s, id ) =>
                                                         {
@@ -172,16 +164,20 @@ namespace SampleCLI
                               text     = "Dynamic list for selection",
                               accessory = new SelectExternalElement
                                           {
-                                              action_id = "what-select-dynamic",
+                                              action_id   = "what-select-dynamic",
                                               placeholder = "The start of something dynamic",
-                                              Suggestions = value => new List< Option >
-                                                                     {
-                                                                         new ( value + " One",   value + "-select-one" ),
-                                                                         new ( value + " Two",   value + "-select-two" ),
-                                                                         new ( value + " Three", value + "-select-three" ),
-                                                                         new ( value + " Four",  value + "-select-four" ),
-                                                                         new ( value + " Five",  value + "-select-five" ),
-                                                                     },
+                                              Suggestions = value =>
+                                                                new Options
+                                                                {
+                                                                    options = new List< Option >
+                                                                              {
+                                                                                  new( value + " One", value   + "-select-one" ),
+                                                                                  new( value + " Two", value   + "-select-two" ),
+                                                                                  new( value + " Three", value + "-select-three" ),
+                                                                                  new( value + " Four", value  + "-select-four" ),
+                                                                                  new( value + " Five", value  + "-select-five" ),
+                                                                              }
+                                                                },
                                               Clicked = ( s, id ) =>
                                                         {
                                                             _statusLayout.text =
@@ -189,7 +185,148 @@ namespace SampleCLI
                                                             slackApp.Update( this );
                                                         }
                                           }
-                          }
+                          },
+                          new SectionLayout
+                          {
+                              block_id = "user-select-block",
+                              text     = "User selection",
+                              accessory = new UsersSelectElement
+                                          {
+                                              action_id = "what-user-selection",
+                                              Clicked = ( s, id ) =>
+                                                        {
+                                                            _statusLayout.text =
+                                                                new Markdown( $"User selection. `{id}`" );
+                                                            slackApp.Update( this );
+                                                        }
+                                          }
+                          },
+                          new SectionLayout
+                          {
+                              block_id = "conversation-select-block",
+                              text     = "Conversation selection",
+                              accessory = new ConversationSelectElement
+                                          {
+                                              action_id = "what-conversation-selection",
+                                              Clicked = ( s, id ) =>
+                                                        {
+                                                            _statusLayout.text =
+                                                                new Markdown( $"Conversation selection. `{id}`" );
+                                                            slackApp.Update( this );
+                                                        }
+                                          }
+                          },
+                          new SectionLayout
+                          {
+                              block_id = "channel-select-block",
+                              text     = "Channel selection",
+                              accessory = new ChannelSelectElement
+                                          {
+                                              action_id = "what-channel-selection",
+                                              Clicked = ( s, id ) =>
+                                                        {
+                                                            _statusLayout.text =
+                                                                new Markdown( $"Channel selection. `{id}`" );
+                                                            slackApp.Update( this );
+                                                        }
+                                          }
+                          },
+                          new SectionLayout
+                          {
+                              block_id = "multi-select-block",
+                              text     = new Markdown( "Fixed list for multiple selection" ),
+                              accessory = new MultiSelectElement
+                                          {
+                                              action_id = "what-multi-selection",
+                                              options = new List< Option >
+                                                        {
+                                                            new ( "One",   "select-one" ),
+                                                            new ( "Two",   "select-two" ),
+                                                            new ( "Three", "select-three" ),
+                                                            new ( "Four",  "select-four" ),
+                                                            new ( "Five",  "select-five" ),
+                                                        },
+                                              Clicked = ( s, ids ) =>
+                                                        {
+                                                            _statusLayout.text =
+                                                                new Markdown( $"Multi-selection is too much. `{string.Join( ',', ids )}`" );
+                                                            slackApp.Update( this );
+                                                        }
+                                          }
+                          },
+                          new SectionLayout
+                          {
+                              block_id = "multi-select-external-block",
+                              text     = "Dynamic list for multi selection",
+                              accessory = new MultiSelectExternalElement
+                                          {
+                                              action_id   = "what-select-dynamic",
+                                              placeholder = "The start of something dynamic",
+                                              Suggestions = value =>
+                                                                new Options
+                                                                {
+                                                                    options = new List< Option >
+                                                                              {
+                                                                                  new( value + " One", value   + "-select-one" ),
+                                                                                  new( value + " Two", value   + "-select-two" ),
+                                                                                  new( value + " Three", value + "-select-three" ),
+                                                                                  new( value + " Four", value  + "-select-four" ),
+                                                                                  new( value + " Five", value  + "-select-five" ),
+                                                                              }
+                                                                },
+                                              Clicked = ( s, ids ) =>
+                                                        {
+                                                            _statusLayout.text =
+                                                                new Markdown( $"Dynamic multi-selection worked. Wow,wow,wow. `{string.Join( ',', ids )}`" );
+                                                            slackApp.Update( this );
+                                                        }
+                                          }
+                          },
+                          new SectionLayout
+                          {
+                              block_id = "multi-user-select-block",
+                              text     = new Markdown( "multiple user selection" ),
+                              accessory = new MultiUserSelectElement
+                                          {
+                                              action_id = "what-multi-user-selection",
+                                              Clicked = ( s, ids ) =>
+                                                        {
+                                                            _statusLayout.text =
+                                                                new Markdown( $"Multi-selection users. `{string.Join( ',', ids )}`" );
+                                                            slackApp.Update( this );
+                                                        }
+                                          }
+                          },
+                          new SectionLayout
+                          {
+                              block_id = "multi-conversation-select-block",
+                              text     = new Markdown( "multiple conversation selection" ),
+                              accessory = new MultiConversationSelectElement
+                                          {
+                                              action_id = "what-multi-conversation-selection",
+                                              Clicked = ( s, ids ) =>
+                                                        {
+                                                            _statusLayout.text =
+                                                                new Markdown( $"Multi-selection conversations. `{string.Join( ',', ids )}`" );
+                                                            slackApp.Update( this );
+                                                        }
+                                          }
+                          },
+                          new SectionLayout
+                          {
+                              block_id = "multi-channel-select-block",
+                              text     = new Markdown( "multiple channel selection" ),
+                              accessory = new MultiChannelSelectElement
+                                          {
+                                              action_id = "what-multi-channel-selection",
+                                              Clicked = ( s, ids ) =>
+                                                        {
+                                                            _statusLayout.text =
+                                                                new Markdown( $"Multi-selection channels. `{string.Join( ',', ids )}`" );
+                                                            slackApp.Update( this );
+                                                        }
+                                          }
+                          },
                       };
         }
     }

@@ -116,6 +116,14 @@ namespace SlackForDotNet.Surface
             this.text  = text;
             this.value = value;
         }
+
+        public override string ToString() =>
+            $"{text.text} ({value})";
+    }
+
+    public class Options
+    {
+        public List<Option> options { get; set; } = new();
     }
 
     public class OptionGroup

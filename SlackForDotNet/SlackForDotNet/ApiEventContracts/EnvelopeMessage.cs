@@ -8,7 +8,6 @@
 // ReSharper disable StringLiteralTypo
 
 using System;
-using System.Dynamic;
 
 namespace SlackForDotNet
 {
@@ -26,6 +25,6 @@ namespace SlackForDotNet
     }
 
     [SlackMessage( "slash_commands")]
-    public class SlashCommands : Envelope<SlackCommand> { }
+    public class SlashCommand : Envelope<SlashCommandPayload> { }
 
 }

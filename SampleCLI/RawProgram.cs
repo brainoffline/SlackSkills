@@ -24,7 +24,7 @@ namespace SampleCLI
 
             _app.OnMessage<AppHomeOpened>(OnHomeOpened);
             _app.OnMessage<AppMention>(OnAppMention);
-            _app.OnMessage<SlashCommands>(OnSlashCommand);
+            _app.OnMessage<SlashCommand>(OnSlashCommand);
             _app.OnMessage<Shortcut>(OnShortcut);
             _app.OnMessage<ViewSubmission>(OnViewSubmission);
             _app.OnMessage<BlockActions>(OnBlockActions);
@@ -70,7 +70,7 @@ namespace SampleCLI
         }
 
 
-        void OnSlashCommand(ISlackApp slackApp, SlashCommands msg)
+        void OnSlashCommand(ISlackApp slackApp, SlashCommand msg)
         {
             if (msg.payload == null)
                 return;

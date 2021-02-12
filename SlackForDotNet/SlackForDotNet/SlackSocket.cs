@@ -12,11 +12,7 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json.Linq;
-#if SYSTEM_JSON
-using System.Text.Json;
-#else
 using Newtonsoft.Json;
-#endif
 
 using SlackForDotNet.WebApiContracts;
 
@@ -25,7 +21,8 @@ namespace SlackForDotNet
     public class SlackSocket
     {
         private readonly ILogger< SlackApp >?         _logger;
-        private          SlackClient                  _slackClient;
+        private readonly SlackClient                  _slackClient;
+        private readonly ISlackApp                    _slackApp;
         private          ClientWebSocket?             _socket;
         private readonly CancellationTokenSource      _socketCancel = new();
         private readonly AutoResetEvent               _resetEvent   = new( false );
@@ -37,9 +34,10 @@ namespace SlackForDotNet
 
         public event EventHandler<SlackMessage>? ApiEventReceived;
 
-        public SlackSocket( SlackClient slackClient, ILogger< SlackApp >? logger )
+        public SlackSocket( SlackClient slackClient, ILogger< SlackApp >? logger, ISlackApp slackApp )
         {
             _slackClient = slackClient;
+            _slackApp    = slackApp;
             _logger      = logger;
         }
 
@@ -98,7 +96,7 @@ namespace SlackForDotNet
                                     if (json == null)
                                         continue;
                                     
-                                    _logger?.LogInformation($">>>\n{json}\n");
+                                    _logger?.LogInformation($"˄˄˄\n{json}\n");
 
                                     _socket.SendAsync(
                                         new ArraySegment<byte>(Encoding.UTF8.GetBytes(json)),
@@ -146,9 +144,8 @@ namespace SlackForDotNet
                         }
                         catch (WebSocketException wex)
                         {
-                            _logger.LogError(wex, "Processing recieving WebSocket");
+                            _logger.LogError(wex, "Processing receiving WebSocket");
 
-                            CloseWebSocket();
                             break;
                         }
                         catch (OperationCanceledException)
@@ -175,6 +172,7 @@ namespace SlackForDotNet
                     }
 
                     _logger.LogInformation("Stopped listening to WebSocket");
+                    await _slackApp.Reconnect();
                 });
             thread.Start();
         }
@@ -182,7 +180,7 @@ namespace SlackForDotNet
         /// <summary>
         /// Send event request message
         /// </summary>
-        public void SendRequest<TRequest>([NotNull] TRequest message) where TRequest : SlackMessage
+        public void PushRequest<TRequest>([NotNull] TRequest message) where TRequest : SlackMessage
         {
             if (message.id == 0)
                 message.id = Interlocked.Increment(ref _currentId);
@@ -191,11 +189,7 @@ namespace SlackForDotNet
             message.type    ??= messageType.Type;
             message.subtype ??= messageType.SubType;
 
-#if SYSTEM_JSON
-            var content = JsonSerializer.Serialize(message, JsonHelpers.DefaultJsonOptions);
-#else
             var content = JsonConvert.SerializeObject( message );
-#endif
 
             _sendQueue.Enqueue( content );
 
@@ -218,21 +212,21 @@ namespace SlackForDotNet
 
         void HandleMessageJson([NotNull] string json)
         {
-            _logger.LogDebug( $"<<<\n{JObject.Parse( json ).ToString( Formatting.Indented )}\n" );
+            _logger.LogDebug( $"www\n{JObject.Parse( json ).ToString( Formatting.Indented )}\n" );
 
             var msg = MessageTypes.Expand( json );
-            if (msg != null)
+            if (msg is Envelope envelope)
             {
-                if (msg is Interactive interactive && interactive.payload?.type == "block_suggestion")
+                if (!envelope.accepts_response_payload)
+                    Acknowledge( envelope.envelope_id );
+                else if (envelope is SlashCommand slashCommand)
                 {
-                    RaiseEventReceived( msg );
+                    // slash commands optionally can return payload.  Better to always ack
+                    // than trust the dev to remember to ack
+                    Acknowledge( envelope.envelope_id );
                 }
-                else
-                {
-                    if (msg is Envelope envelope)
-                        Acknowledge( envelope.envelope_id );
-                    RaiseEventReceived( msg );
-                }
+
+                RaiseEventReceived(msg);
             }
         }
 
