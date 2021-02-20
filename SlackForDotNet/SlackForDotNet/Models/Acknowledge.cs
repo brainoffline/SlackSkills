@@ -2,6 +2,8 @@
 
 using System;
 
+using JetBrains.Annotations;
+
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 // ReSharper disable IdentifierTypo
@@ -13,9 +15,16 @@ namespace SlackForDotNet
 {
     public record Acknowledge(string envelope_id);
 
-    public class Acknowledge<TPayload> where TPayload : class
+    public class AcknowledgeResponse<T>
     {
-        public string   envelope_id { get; set; }
-        public TPayload payload     { get; set; }
+        public string envelope_id { get; set; }
+        public T      payload     { get; set; }
+
+        public AcknowledgeResponse() { }
+        public AcknowledgeResponse(string envelopeId, T payload)
+        {
+            envelope_id  = envelopeId;
+            this.payload = payload;
+        }
     }
 }

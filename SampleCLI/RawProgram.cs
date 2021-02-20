@@ -25,7 +25,7 @@ namespace SampleCLI
             _app.OnMessage<AppHomeOpened>(OnHomeOpened);
             _app.OnMessage<AppMention>(OnAppMention);
             _app.OnMessage<SlashCommand>(OnSlashCommand);
-            _app.OnMessage<Shortcut>(OnShortcut);
+            _app.OnMessage<GlobalShortcut>(OnShortcut);
             _app.OnMessage<ViewSubmission>(OnViewSubmission);
             _app.OnMessage<BlockActions>(OnBlockActions);
             _app.OnMessage<ViewClosed>(OnViewClosed);
@@ -62,39 +62,30 @@ namespace SampleCLI
             }
         }
 
-        async void OnAppMention(ISlackApp slackApp, AppMention msg)
-        {
-            slackApp.Logger.LogDebug("App Mention");
-
-            await slackApp.SayToUser("Thanks for the mention brah", null, msg.channel, msg.user);
-        }
-
 
         void OnSlashCommand(ISlackApp slackApp, SlashCommand msg)
         {
-            if (msg.payload == null)
-                return;
-            slackApp.Logger.LogInformation($"Slash {msg.payload.command} {msg.payload.text}");
+            slackApp.Logger.LogInformation($"Slash {msg.command} {msg.text}");
 
-            var parser  = new ParamParser<SlashExample>();
-            var example = parser.ParseArguments(msg.payload.text, includeEnvironmentVariables: false);
+            var parser  = new ParamParser<SlashCommandExample>();
+            var example = parser.ParseArguments(msg.text, includeEnvironmentVariables: false);
 
-            if (string.IsNullOrWhiteSpace(example.ServerName))
+            if (string.IsNullOrWhiteSpace(example.Comment))
             {
                 // Include the user id so that only that user will see the message
-                slackApp.Say(parser.Help(), msg.payload.channel_id, msg.payload.user_id); // Ephemeral msg, just to user 
+                slackApp.Say(parser.Help(), msg.channel_id, msg.user_id); // Ephemeral msg, just to user 
             }
             else
             {
-                slackApp.Say(new SectionLayout
-                {
-                    text = "I have my :eyes: on you\nWhat do you think you are up to :question:"
-                },
-                              msg.payload.channel_id);
+                slackApp.Say( new SectionLayout
+                              {
+                                  text = "I have my :eyes: on you\nWhat do you think you are up to :question:"
+                              },
+                              msg.channel_id);
             }
         }
 
-        async void OnShortcut(ISlackApp slackApp, Shortcut msg)
+        async void OnShortcut(ISlackApp slackApp, GlobalShortcut msg)
         {
             var request = new ViewOpen
             {

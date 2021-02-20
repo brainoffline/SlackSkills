@@ -14,7 +14,7 @@ namespace SlackForDotNet
     public class Container
     {
         public string  type          { get; set; }
-        public int?    message_ts    { get; set; }
+        public string? message_ts    { get; set; }
         public int?    attachment_id { get; set; }
         public string  channel_id    { get; set; }
         public string? message       { get; set; }

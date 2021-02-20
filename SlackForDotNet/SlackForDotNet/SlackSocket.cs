@@ -32,7 +32,7 @@ namespace SlackForDotNet
         
         public           bool                         ShortConnections { get; set; }
 
-        public event EventHandler<SlackMessage>? ApiEventReceived;
+        public event Action<SlackMessage>? ApiEventReceived;
 
         public SlackSocket( SlackClient slackClient, ILogger< SlackApp >? logger, ISlackApp slackApp )
         {
@@ -177,6 +177,35 @@ namespace SlackForDotNet
             thread.Start();
         }
 
+        private readonly List< string > _unacknowledgedEnvelopes = new();
+        private readonly object         _unacknowledgedLock      = new();
+
+        private void AddEnvelopeId( string envelopeId )
+        {
+            lock (_unacknowledgedLock)
+            {
+                if (!_unacknowledgedEnvelopes.Contains( envelopeId ))
+                    _unacknowledgedEnvelopes.Add( envelopeId );
+            }
+        }
+
+        private void RemoveEnvelopeId( string envelopeId )
+        {
+            lock (_unacknowledgedLock)
+            {
+                if (_unacknowledgedEnvelopes.Contains(envelopeId))
+                    _unacknowledgedEnvelopes.Remove(envelopeId);
+            }
+        }
+
+        private bool IsUnacknowledgedEnvelopeId( string envelopeId )
+        {
+            lock (_unacknowledgedLock)
+            {
+                return _unacknowledgedEnvelopes.Contains( envelopeId );
+            }
+        }
+
         /// <summary>
         /// Send event request message
         /// </summary>
@@ -185,9 +214,12 @@ namespace SlackForDotNet
             if (message.id == 0)
                 message.id = Interlocked.Increment(ref _currentId);
 
-            var messageType                              = MessageTypes.GetMessageAttributes<TRequest>();
+            var messageType = MessageTypes.GetMessageAttributes< TRequest >();
             message.type    ??= messageType.Type;
             message.subtype ??= messageType.SubType;
+
+            if (message is Envelope envelop)
+                RemoveEnvelopeId(envelop.envelope_id);
 
             var content = JsonConvert.SerializeObject( message );
 
@@ -198,16 +230,23 @@ namespace SlackForDotNet
 
         public void Push< TRequest >( [ NotNull ] TRequest message )
         {
+            if (message is Envelope envelop)
+                RemoveEnvelopeId(envelop.envelope_id);
+
             var content = JsonConvert.SerializeObject(message);
             _sendQueue.Enqueue(content);
             KickSendQueue();
 
         }
 
-        public void Acknowledge( string envelopeId )
+        public void Acknowledge( string envelopeId, bool force = false )
         {
-            _sendQueue.Enqueue( JsonConvert.SerializeObject(new Acknowledge(envelopeId)) );
-            KickSendQueue();
+            if (force || IsUnacknowledgedEnvelopeId( envelopeId ))
+            {
+                RemoveEnvelopeId( envelopeId );
+                _sendQueue.Enqueue( JsonConvert.SerializeObject( new Acknowledge( envelopeId ) ) );
+                KickSendQueue();
+            }
         }
 
         void HandleMessageJson([NotNull] string json)
@@ -218,15 +257,14 @@ namespace SlackForDotNet
             if (msg is Envelope envelope)
             {
                 if (!envelope.accepts_response_payload)
-                    Acknowledge( envelope.envelope_id );
-                else if (envelope is SlashCommand slashCommand)
-                {
-                    // slash commands optionally can return payload.  Better to always ack
-                    // than trust the dev to remember to ack
-                    Acknowledge( envelope.envelope_id );
-                }
-
+                    Acknowledge( envelope.envelope_id, force:true );
+                else
+                    AddEnvelopeId( envelope.envelope_id );
+                
                 RaiseEventReceived(msg);
+                
+                if (envelope.accepts_response_payload)
+                    Acknowledge( envelope.envelope_id );
             }
         }
 
@@ -247,9 +285,9 @@ namespace SlackForDotNet
             _resetEvent.Set();
         }
 
-        protected virtual void RaiseEventReceived( SlackMessage e )
+        protected virtual void RaiseEventReceived( SlackMessage msg )
         {
-            ApiEventReceived?.Invoke( this, e );
+            ApiEventReceived?.Invoke( msg );
         }
     }
 }

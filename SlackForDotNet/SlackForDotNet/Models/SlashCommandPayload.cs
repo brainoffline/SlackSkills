@@ -36,8 +36,48 @@ namespace SlackForDotNet
           "accepts_response_payload": true
         }
      */
-    public class SlashCommandPayload
+
+    /// <summary>
+    ///     Slash Command 
+    /// </summary>
+    /// <remarks>
+    ///     https://api.slack.com/interactivity/slash-commands
+    ///     Wrapped in a <see cref="SlashCommandsEnvelope">SlashCommandsEnvelope</see>/>
+    /// </remarks>
+    /// <returns>
+    ///     Should acknowledge with a <see cref="SlashCommandResponse">SlashCommandResponse</see> object.
+    /// </returns>
+    /// <example>
+    /// {
+    ///     "envelope_id": "7ed8bc9d-e133-4638-b971-50c3d57a2afa",
+    ///     "payload":
+    ///     {
+    ///         "token": "Fblah",
+    ///         "team_id": "Tblah",
+    ///         "team_domain": "brainoffline",
+    ///         "channel_id": "Dblah",
+    ///         "channel_name": "directmessage",
+    ///         "user_id": "Ublah",
+    ///         "user_name": "brainoffline",
+    ///         "command": "/blah",
+    ///         "text": "",
+    ///         "api_app_id": "Ablah",
+    ///         "is_enterprise_install": "false",
+    ///         "response_url": "https://hooks.slack.com/commands/blah/blah/blah",
+    ///         "trigger_id": "1752610767569.2413922186.blah"
+    ///     },
+    ///     "type": "slash_commands",
+    ///     "accepts_response_payload": true
+    /// }
+    /// </example>
+    [SlackMessage("slash_command")]
+    public class SlashCommand : SlackMessage
     {
+        public SlashCommand()
+        {
+            type = "slash_command";
+        }
+        
         public string token        { get; set; }
         public string team_id      { get; set; }
         public string team_domain  { get; set; }
@@ -58,5 +98,17 @@ namespace SlackForDotNet
         public bool?         replace_original { get; set; }
         public string?       text             { get; set; }
         public List<Layout>? blocks           { get; set; }
+
+        public SlashCommandResponse Add(Layout block)
+        {
+            blocks ??= new List<Layout>();
+            blocks.Add(block);
+
+            return this;
+        }
+
     }
+
+    [SlackMessage( "slash_commands")]
+    public class SlashCommandsEnvelope : Envelope<SlashCommand> { }
 }

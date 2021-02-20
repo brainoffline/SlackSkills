@@ -100,6 +100,9 @@ namespace SampleCLI
 
                 if (string.Compare( line, "Stop", StringComparison.OrdinalIgnoreCase ) == 0)
                     break;
+                
+                if (string.Compare( line, "cls", StringComparison.OrdinalIgnoreCase ) == 0)
+                    Console.Clear();
 
             } while (true);
 
@@ -147,10 +150,10 @@ namespace SampleCLI
     }
 
 
-    internal class SlashExample
+    internal class SlashCommandExample
     {
-        [ Param( "s|Server", "Server Name" ) ]
-        public string? ServerName { get; set; }
+        [ Param( "c|Comment", "A comment to display" ) ]
+        public string? Comment { get; set; }
     }
 
 

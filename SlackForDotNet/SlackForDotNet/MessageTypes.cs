@@ -28,13 +28,13 @@ namespace SlackForDotNet
                 RegisterEventMessage(type);
         }
 
-        public static void RegisterEventMessage(Type type)
+        public static SlackMessageAttribute? RegisterEventMessage(Type type)
         {
             var typeInfo = type.GetTypeInfo();
             var messageType = typeInfo.GetCustomAttribute<SlackMessageAttribute>();
 
             if (messageType == null)
-                return;
+                return null;
 
             try
             {
@@ -44,6 +44,8 @@ namespace SlackForDotNet
             {
                 // Ignore exception.  Possible race condition
             }
+
+            return messageType;
         }
 
         public static SlackMessageAttribute? GetMessageAttributes( Type type )
@@ -53,21 +55,19 @@ namespace SlackForDotNet
             
             if (typeof(SlackMessage).IsAssignableFrom( type ))
             {
-                RegisterEventMessage(type);
-                return EventMessageTypes[type];
+                return RegisterEventMessage(type);
             }
 
             return null;
         }
 
-        public static SlackMessageAttribute GetMessageAttributes<T>(T? value = default) where T : SlackMessage
+        public static SlackMessageAttribute? GetMessageAttributes<T>(T? value = default) where T : SlackMessage
         {
             var type = value?.GetType() ?? typeof(T);
             if (EventMessageTypes.TryGetValue(type, out var messageType))
                 return messageType;
 
-            RegisterEventMessage(type);
-            return EventMessageTypes[type];
+            return RegisterEventMessage(type);
         }
 
         public static (Type, SlackMessageAttribute) GetMessageAttributes(

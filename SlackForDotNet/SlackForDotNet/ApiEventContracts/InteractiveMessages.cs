@@ -13,21 +13,38 @@ namespace SlackForDotNet
 {
     [SlackMessage( "interactive")]
     public class Interactive : Envelope<SlackMessage> { }
-    
+
     [SlackMessage( "shortcut")]
-    public class Shortcut : SlackMessage
+    public class GlobalShortcut : SlackMessage
     {
-        public string?              token                 { get; set; }
-        public string?              action_ts             { get; set; }
-        public Team?                team                  { get; set; }
-        public UserMinimal?         user                  { get; set; }
-        public bool?                is_enterprise_install { get; set; }
-        public Enterprise?          enterprise            { get; set; }
-        public string?              callback_id           { get; set; }
-        public string?              trigger_id            { get; set; }
+        public string?      token                 { get; set; }
+        public string?      action_ts             { get; set; }
+        public Team?        team                  { get; set; }
+        public UserMinimal? user                  { get; set; }
+        public bool?        is_enterprise_install { get; set; }
+        public Enterprise?  enterprise            { get; set; }
+        public string?      callback_id           { get; set; }
+        public string?      trigger_id            { get; set; }
     }
 
-    [ SlackMessage( "view_submission" ) ]
+    [SlackMessage( "message_action")]
+    public class MessageShortcut : SlackMessage
+    {
+        public string?      token                 { get; set; }
+        public string?      action_ts             { get; set; }
+        public string?      message_ts            { get; set; }
+        public Channel?     channel               { get; set; }
+        public Team?        team                  { get; set; }
+        public UserMinimal? user                  { get; set; }
+        public bool?        is_enterprise_install { get; set; }
+        public Enterprise?  enterprise            { get; set; }
+        public string?      callback_id           { get; set; }
+        public string?      trigger_id            { get; set; }
+        public string?      response_url          { get; set; }
+        public Message?     message               { get; set; }
+    }
+
+    [SlackMessage( "view_submission" ) ]
     public class ViewSubmission : SlackMessage
     {
         public Team?              team                  { get; set; }

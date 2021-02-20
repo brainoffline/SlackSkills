@@ -18,13 +18,16 @@ namespace SlackForDotNet
         public          int         retry_attempt            { get; set; }
         public          string?     retry_reason             { get; set; }
     }
+    
+    public interface IEnvelope<out T> where T : class
+    {
+        public string envelope_id              { get; }
+        public bool   accepts_response_payload { get; }
+        T?            payload                  { get; }
+    }
 
-    public class Envelope<T> : Envelope where T : class
+    public class Envelope<T> : Envelope, IEnvelope<T> where T : class
     {
         public T? payload { get; set; }
     }
-
-    [SlackMessage( "slash_commands")]
-    public class SlashCommand : Envelope<SlashCommandPayload> { }
-
 }

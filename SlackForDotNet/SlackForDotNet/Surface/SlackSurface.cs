@@ -112,14 +112,14 @@ namespace SlackForDotNet.Surface
                 {
                     var options = select.Suggestions?.Invoke( blockSuggestion.value );
                     if (options != null)
-                        App.Push( new Acknowledge< Options > { envelope_id = envelopeId, payload = options } );
+                        App.Push( new AcknowledgeResponse< Options > { envelope_id = envelopeId, payload = options } );
                 }
                 break;
             case MultiSelectExternalElement multiSelect:
                 {
                     var options = multiSelect.Suggestions?.Invoke( blockSuggestion.value );
                     if (options != null)
-                        App.Push( new Acknowledge< Options > { envelope_id = envelopeId, payload = options } );
+                        App.Push( new AcknowledgeResponse< Options > { envelope_id = envelopeId, payload = options } );
                 }
                 break;
             }

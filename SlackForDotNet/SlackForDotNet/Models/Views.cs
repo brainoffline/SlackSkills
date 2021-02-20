@@ -52,6 +52,19 @@ namespace SlackForDotNet
         }
     }
 
+    public class Blocks : SlackMessage
+    {
+        public List<Layout>? blocks { get; set; }
+
+        public Blocks Add(Layout block)
+        {
+            blocks ??= new List<Layout>();
+            blocks.Add(block);
+
+            return this;
+        }
+    }
+
     public class HometabView : View
     {
         public HometabView()

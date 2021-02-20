@@ -1,8 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using JetBrains.Annotations;
+using Asciis;
+
+using Microsoft.Extensions.Logging;
 
 using SlackForDotNet;
 using SlackForDotNet.Surface;
@@ -16,318 +17,100 @@ namespace SampleCLI
         
         public void SetupSurface()
         {
-            Console.WriteLine( "Slack Surface CLI" );
+            _app.OnMessage<AppMention>(OnAppMention);
+
+            _app.OnSlashCommand("/slackdk", OnSlashCommandSurface);
+
+            _app.OnGlobalShortcut("slackdk_shortcut", OnShortcutSurface);
+            _app.OnMessageShortcut("slackdk_action", OnMessageShortcutSurface);
 
             _app.OnMessage<AppHomeOpened>(OnHomeOpenedSurface);
-            _app.OnMessage<SlashCommand>(OnSlashCommandSurface);
+
         }
 
-        private async void OnHomeOpenedSurface( ISlackApp slackApp, AppHomeOpened msg )
+        async void OnAppMention(ISlackApp slackApp, AppMention msg)
         {
-            _home ??= new HametabSurface( _app );
-
-            await _app.PublishHomepage( _home, msg );
+            await slackApp.SayToUser("Thanks for the mention brah", null, msg.channel, msg.user);
         }
 
-        private void OnSlashCommandSurface(ISlackApp slackApp, SlashCommand msg)
+        void OnSlashCommandSurface(ISlackApp slackApp, SlashCommand msg, IEnvelope<SlashCommand> envelope)
         {
-        }
-    }
-    
-    public class HametabSurface : SlackSurface
-    {
-        private SectionLayout _statusLayout;
+            var parser  = new ParamParser<SlashCommandExample>();
+            var example = parser.ParseArguments(msg.text, includeEnvironmentVariables: false);
 
-        public HametabSurface( [ NotNull ] ISlackApp slackApp ) : base( slackApp )
-        {
-            Title = "SlackDK Title";
-            Layouts = new List< Layout >
-                      {
-                          new HeaderLayout( "SlackDK Home Page" ),
-                          new SectionLayout { text = new Markdown( "*Welcome* to the _new_ and _improved_ SlackDK ~inner-city apartment~ home page" ) },
-                          ( _statusLayout = new SectionLayout { text = ":wave: hello" } ),
-                          new SectionLayout
-                          {
-                              text     = "It's a kind of",
-                              block_id = "magic-block",
-                              accessory = new ButtonElement
-                                          {
-                                              action_id = "magic-button",
-                                              text      = "Magic",
-                                              Clicked = ( sender, args ) =>
-                                                        {
-                                                            _statusLayout.text = ":banana: :sob: Magic is hard";
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new InputLayout
-                          {
-                              block_id = "textinput-block",
-                              label    = "What are you doing today",
-                              element = new TextInputElement( "what-doing" )
-                                        {
-                                            TextUpdated = ( s, value ) =>
-                                                          {
-                                                              _statusLayout.text =
-                                                                  new Markdown( $"Keep talking brah. I'm listening. `{value}`" );
-                                                              slackApp.Update( this );
-                                                          },
-                                            dispatch_action_config = DispatchAction.CharacterEntered
-                                        },
-                              dispatch_action = true
-                          },
-                          new InputLayout
-                          {
-                              block_id = "checkboxes-block",
-                              label    = "Update the following survey",
-                              element = new CheckboxesElement( "what-survey" )
-                                        {
-                                            options = new List< Option >
-                                                      {
-                                                          new Option( "I love the historical sound of dialup",           "dialup" ),
-                                                          new Option( "You can never get enough data",                   "enough-data" ),
-                                                          new Option( "73.6% of statistics are true",                    "lies-statistics" ),
-                                                          new Option( "The future is soo bright, I have to wear shades", "future-shades" ),
-                                                      }
-                                        }
-                          },
-                          new InputLayout
-                          {
-                              block_id = "options-block",
-                              label    = "Update the following option",
-                              element = new RadioButtonsElement( "what-options" )
-                                        {
-                                            options = new List< Option >
-                                                      {
-                                                          new Option( "I love fake news",            "fake-news" ),
-                                                          new Option( "Enough data is never enough", "more-data" ),
-                                                          new Option( "I trust 73.6% of statistics", "true-lies" ),
-                                                          new Option( "The future is yesterday",     "vision" ),
-                                                      }
-                                        }
-                          },
-                          new InputLayout { block_id = "date-block", label = "What date will it happen", element = new DatePickerElement( "what-date" ) },
-                          // still in beta
-                          //new InputLayout
-                          //{
-                          //    label   = "What time will it happen",
-                          //    element = new TimePickerElement("what-time")
-                          //},
-                          new SectionLayout
-                          {
-                              block_id = "overflow-block",
-                              text     = new Markdown( "Whatever you do, :x: do not select a menu item" ),
-                              accessory = new OverflowMenuElement( "what-overflow" )
-                                          {
-                                              action_id = "what-overflow",
-                                              options = new List< Option >
-                                                        {
-                                                            new Option( "Erase Everything", "over-erase" ),
-                                                            new Option( "Delete something", "over-delete" ),
-                                                            new Option( "Update whatever",  "over-update" ),
-                                                        },
-                                              Clicked = ( s, id ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"I told ya bro. I'm listening. `{id}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "select-block",
-                              text     = new Markdown( "Fixed list for selection" ),
-                              accessory = new SlackForDotNet.Surface.SelectElement
-                                          {
-                                              action_id = "what-selection",
-                                              options = new List< Option >
-                                                        {
-                                                            new Option( "One",   "select-one" ),
-                                                            new Option( "Two",   "select-two" ),
-                                                            new Option( "Three", "select-three" ),
-                                                            new Option( "Four",  "select-four" ),
-                                                            new Option( "Five",  "select-five" ),
-                                                        },
-                                              Clicked = ( s, id ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"Fixed selection is the bomb. `{id}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "select-external-block",
-                              text     = "Dynamic list for selection",
-                              accessory = new SelectExternalElement
-                                          {
-                                              action_id   = "what-select-dynamic",
-                                              placeholder = "The start of something dynamic",
-                                              Suggestions = value =>
-                                                                new Options
-                                                                {
-                                                                    options = new List< Option >
-                                                                              {
-                                                                                  new( value + " One", value   + "-select-one" ),
-                                                                                  new( value + " Two", value   + "-select-two" ),
-                                                                                  new( value + " Three", value + "-select-three" ),
-                                                                                  new( value + " Four", value  + "-select-four" ),
-                                                                                  new( value + " Five", value  + "-select-five" ),
-                                                                              }
-                                                                },
-                                              Clicked = ( s, id ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"Dynamic selection worked. Wow. `{id}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "user-select-block",
-                              text     = "User selection",
-                              accessory = new UsersSelectElement
-                                          {
-                                              action_id = "what-user-selection",
-                                              Clicked = ( s, id ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"User selection. `{id}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "conversation-select-block",
-                              text     = "Conversation selection",
-                              accessory = new ConversationSelectElement
-                                          {
-                                              action_id = "what-conversation-selection",
-                                              Clicked = ( s, id ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"Conversation selection. `{id}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "channel-select-block",
-                              text     = "Channel selection",
-                              accessory = new ChannelSelectElement
-                                          {
-                                              action_id = "what-channel-selection",
-                                              Clicked = ( s, id ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"Channel selection. `{id}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "multi-select-block",
-                              text     = new Markdown( "Fixed list for multiple selection" ),
-                              accessory = new MultiSelectElement
-                                          {
-                                              action_id = "what-multi-selection",
-                                              options = new List< Option >
-                                                        {
-                                                            new ( "One",   "select-one" ),
-                                                            new ( "Two",   "select-two" ),
-                                                            new ( "Three", "select-three" ),
-                                                            new ( "Four",  "select-four" ),
-                                                            new ( "Five",  "select-five" ),
-                                                        },
-                                              Clicked = ( s, ids ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"Multi-selection is too much. `{string.Join( ',', ids )}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "multi-select-external-block",
-                              text     = "Dynamic list for multi selection",
-                              accessory = new MultiSelectExternalElement
-                                          {
-                                              action_id   = "what-select-dynamic",
-                                              placeholder = "The start of something dynamic",
-                                              Suggestions = value =>
-                                                                new Options
-                                                                {
-                                                                    options = new List< Option >
-                                                                              {
-                                                                                  new( value + " One", value   + "-select-one" ),
-                                                                                  new( value + " Two", value   + "-select-two" ),
-                                                                                  new( value + " Three", value + "-select-three" ),
-                                                                                  new( value + " Four", value  + "-select-four" ),
-                                                                                  new( value + " Five", value  + "-select-five" ),
-                                                                              }
-                                                                },
-                                              Clicked = ( s, ids ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"Dynamic multi-selection worked. Wow,wow,wow. `{string.Join( ',', ids )}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "multi-user-select-block",
-                              text     = new Markdown( "multiple user selection" ),
-                              accessory = new MultiUserSelectElement
-                                          {
-                                              action_id = "what-multi-user-selection",
-                                              Clicked = ( s, ids ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"Multi-selection users. `{string.Join( ',', ids )}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "multi-conversation-select-block",
-                              text     = new Markdown( "multiple conversation selection" ),
-                              accessory = new MultiConversationSelectElement
-                                          {
-                                              action_id = "what-multi-conversation-selection",
-                                              Clicked = ( s, ids ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"Multi-selection conversations. `{string.Join( ',', ids )}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                          new SectionLayout
-                          {
-                              block_id = "multi-channel-select-block",
-                              text     = new Markdown( "multiple channel selection" ),
-                              accessory = new MultiChannelSelectElement
-                                          {
-                                              action_id = "what-multi-channel-selection",
-                                              Clicked = ( s, ids ) =>
-                                                        {
-                                                            _statusLayout.text =
-                                                                new Markdown( $"Multi-selection channels. `{string.Join( ',', ids )}`" );
-                                                            slackApp.Update( this );
-                                                        }
-                                          }
-                          },
-                      };
+            if (string.IsNullOrWhiteSpace(example.Comment))
+            {
+                var response = new SlashCommandResponse
+                               {
+                                   response_type = "ephemeral", // visible to only the user
+                                   text = parser.Help()
+                               };
+                slackApp.Push( new AcknowledgeResponse< SlashCommandResponse >
+                               ( envelope.envelope_id, response ));
+            }
+            else
+            {
+                var response = new SlashCommandResponse()
+                              .Add( new HeaderLayout( "Slash command response" ) )
+                              .Add( new SectionLayout { block_id = "wave_id", text = $":wave: {example.Comment}" } )
+                              .Add( new SectionLayout
+                                    {
+                                        block_id = "button-section", 
+                                        text = "*Welcome*", 
+                                        accessory = new ButtonElement { text = "Just a button", action_id = "just-a-button" }
+                                    } );
+                slackApp.Push( new AcknowledgeResponse< SlashCommandResponse >(
+                       envelope.envelope_id, response ) );
+            }
         }
+
+        private void OnShortcutSurface(ISlackApp slackApp, GlobalShortcut msg)
+        {
+            var request = new ViewOpen
+                          {
+                              trigger_id = msg.trigger_id,
+                              view = new ModalView
+                                     {
+                                         title           = msg.callback_id!,
+                                         close           = "Thanks",
+                                         submit          = "Do Something"
+                                     }
+                                    .Add(new SectionLayout { block_id = "wave_id", text = ":wave: Aren't shortcuts awesome" })
+                                    .Add(new SectionLayout
+                                         {
+                                             block_id  = "button-section",
+                                             text      = "*Welcome*",
+                                             accessory = new ButtonElement
+                                                         {
+                                                             text = "Just a button", 
+                                                             action_id = "just-a-button"
+                                                         }
+                                         })
+                          };
+            var response = slackApp.Send< ViewOpen, ViewResponse >( request );
+        }
+
+        private void OnMessageShortcutSurface(ISlackApp slackApp, MessageShortcut msg)
+        {
+            var request = new ViewOpen
+                          {
+                              trigger_id = msg.trigger_id,
+                              view = new ModalView
+                                     {
+                                         title  = msg.callback_id!,
+                                         close  = "Thanks",
+                                     }
+                                    .Add(new SectionLayout { block_id = "wave_id", text = ":wave: Nice message" })
+                          };
+            var response = slackApp.Send<ViewOpen, ViewResponse>(request);
+        }
+
+        private async void OnHomeOpenedSurface(ISlackApp slackApp, AppHomeOpened msg)
+        {
+            _home ??= new HametabSurface(_app);
+
+            await _app.PublishHomepage(_home, msg);
+        }
+
     }
 }

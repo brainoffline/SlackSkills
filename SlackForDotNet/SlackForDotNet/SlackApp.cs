@@ -149,7 +149,7 @@ namespace SlackForDotNet
             OnMessage< Goodbye >( ( _, msg ) => Reconnect() );
 
             OnMessage< BlockActions >( OnBlockActions );
-            OnMessage< EventCallback >( OnEventsApi );
+            OnMessage< EventCallback >( OnEventCallback );
             OnMessage< Interactive >( OnInteractive );
             OnMessage< Disconnect >( OnDisconnect );
             OnMessage< Message >( OnAnyMessage );
@@ -159,13 +159,13 @@ namespace SlackForDotNet
             // Establish websocket connection
             if (_socketModeAvailable && !string.IsNullOrWhiteSpace(AppLevelToken))
             {
-                _slackSocket = new SlackSocket( _slackClient, Logger )
+                _slackSocket = new SlackSocket( _slackClient, Logger, this )
                                {
                                #if DEBUG_SHORT_CONNECTIONS
                                    ShortConnections = true  // Useful for debugging websocket closures
                                #endif
                                };
-                _slackSocket.ApiEventReceived += ( sender, message ) => { RaiseApiEvent( message ); };
+                _slackSocket.ApiEventReceived += RaiseApiEvent;
                 await _slackSocket.ConnectWebSocket(AppLevelToken!);
             }
 
@@ -180,7 +180,7 @@ namespace SlackForDotNet
                 await _slackSocket.ConnectWebSocket(AppLevelToken!);
         }
 
-        private void OnEventsApi( ISlackApp app, EventCallback msg )
+        private void OnEventCallback( ISlackApp app, EventCallback msg )
         {
             if (msg.payload == null) return;
             
@@ -188,7 +188,7 @@ namespace SlackForDotNet
             TeamId = msg.payload.team_id;
             
             if (msg.payload.@event != null)
-                RaiseApiEvent( msg.payload.@event );
+                RaiseApiEvent( msg.payload.@event, msg.payload );
         }
 
         private void OnInteractive(ISlackApp app, Interactive msg)
@@ -244,7 +244,32 @@ namespace SlackForDotNet
 
             return true;
         }
-        
+
+        public void RaiseApiEvent< TContainer >( SlackMessage msg, TContainer container ) where TContainer : SlackMessage
+        {
+            if (string.IsNullOrWhiteSpace(msg.type))
+                return;
+
+            foreach (var handler in _apiEventHandlers)
+            {
+                if (msg is MessageBase messageBase && handler.Filter != null)
+                {
+                    if (messageBase.text != null && handler.Filter.IsMatch(messageBase.text))
+                        handler.MessageAction?.Invoke(this, messageBase);
+                }
+
+                if (handler.MessageType    == msg.type &&
+                    handler.MessageSubType == msg.subtype)
+                {
+                    if (handler.MessageContainerAction != null)
+                        handler.MessageContainerAction?.Invoke(this, msg, container);
+                    else
+                        handler.MessageAction?.Invoke(this, msg);
+                }
+            }
+
+        }
+
         /// <summary>
         /// Call this when a Interactive Message or API event is raised in your SlackBot API
         /// </summary>
@@ -252,6 +277,29 @@ namespace SlackForDotNet
         {
             if (string.IsNullOrWhiteSpace(msg.type)) 
                 return;
+
+            if (msg is IEnvelope<SlackMessage> envelope && envelope.payload != null)
+            {
+                var payload = envelope.payload;
+
+                foreach (var handler in _apiEventHandlers)
+                {
+                    if (payload is MessageBase messageBase && handler.Filter != null)
+                    {
+                        if (messageBase.text != null && handler.Filter.IsMatch(messageBase.text))
+                            handler.MessageAction?.Invoke(this, messageBase);
+                    }
+
+                    if (handler.MessageType == payload.type &&
+                        handler.MessageSubType == payload.subtype)
+                    {
+                        if (handler.MessageContainerAction != null)
+                            handler.MessageContainerAction?.Invoke(this, payload, msg);
+                        else
+                            handler.MessageAction?.Invoke(this, payload);
+                    }
+                }
+            }
 
             foreach (var handler in _apiEventHandlers)
             {
@@ -286,27 +334,104 @@ namespace SlackForDotNet
         {
             var attr = MessageTypes.GetMessageAttributes<T>();
             _apiEventHandlers.Add( new ApiEventHandler(
-                                             MessageType: attr.Type,
-                                             MessageSubType: attr.SubType,
-                                             MessageAction: (_, msg) => action( this, (T)msg ) ) );
+                                         MessageType: attr.Type,
+                                         MessageSubType: attr.SubType,
+                                         MessageAction: (_, msg) => action( this, (T)msg ) ) );
         }
+
+        /// <summary>
+        /// Register callback for a particular type of message
+        /// </summary>
+        public void OnMessage<T>([NotNull] Action<ISlackApp, T, IEnvelope<T> > action) 
+            where T : SlackMessage
+        {
+            var attr = MessageTypes.GetMessageAttributes<T>();
+            _apiEventHandlers.Add(new ApiEventHandler(
+                  MessageType: attr.Type,
+                  MessageSubType: attr.SubType,
+                  MessageContainerAction:(_, msg, envelope) => action(this, (T)msg, (IEnvelope<T>)envelope)));
+        }
+
+        /// <summary>
+        ///     Register action to be called when a command is executed
+        /// </summary>
+        /// <param name="command">The name of the command. e.g. /blah </param>
+        /// <param name="action"></param>
+        public void OnSlashCommand( [NotNull] string command, Action< ISlackApp, SlashCommand, SlashCommandsEnvelope > action )
+        {
+            if (string.IsNullOrEmpty( command )) throw new ArgumentException( "Invalid command", nameof(command) );
+            if (!command.StartsWith( "/" ))
+                command = "/" + command;
+
+            var attr = MessageTypes.GetMessageAttributes<SlashCommand>();
+            _apiEventHandlers.Add(new ApiEventHandler(
+                  MessageType: attr.Type,
+                  MessageSubType: attr.SubType,
+                  MessageContainerAction: (_, msg, envelope) =>
+                                          {
+                                              var slashCommand = (SlashCommand)msg;
+                                              if (string.Equals( slashCommand.command, command, StringComparison.OrdinalIgnoreCase ))
+                                                  action( this, (SlashCommand)msg, (SlashCommandsEnvelope)envelope );
+                                          } ));
+
+        }
+
+        /// <summary>
+        ///     Register action to be called when a Global Shortcut is triggered
+        /// </summary>
+        public void OnGlobalShortcut( string callbackId, Action< ISlackApp, GlobalShortcut> action )
+        {
+            if (string.IsNullOrEmpty(callbackId)) throw new ArgumentException("Invalid callback", nameof(callbackId));
+
+            var attr = MessageTypes.GetMessageAttributes<GlobalShortcut>();
+            _apiEventHandlers.Add( new ApiEventHandler(
+                                                       MessageType: attr.Type,
+                                                       MessageSubType: attr.SubType,
+                                                       MessageContainerAction: ( _, msg, envelope ) =>
+                                                                               {
+                                                                                   var shortcut = (GlobalShortcut)msg;
+                                                                                   if (string.Equals( shortcut.callback_id, callbackId, StringComparison.OrdinalIgnoreCase ))
+                                                                                       action( this, shortcut );
+                                                                               } ) );
+        }
+
+        /// <summary>
+        ///     Register action to be called when a Global Shortcut is triggered
+        /// </summary>
+        public void OnMessageShortcut(string callbackId, Action<ISlackApp, MessageShortcut> action)
+        {
+            if (string.IsNullOrEmpty(callbackId)) throw new ArgumentException("Invalid callback", nameof(callbackId));
+
+            var attr = MessageTypes.GetMessageAttributes<GlobalShortcut>();
+            _apiEventHandlers.Add( new ApiEventHandler(
+                                                       MessageType: attr.Type,
+                                                       MessageSubType: attr.SubType,
+                                                       MessageContainerAction: ( _, msg, envelope ) =>
+                                                                               {
+                                                                                   var shortcut = (MessageShortcut)msg;
+                                                                                   if (string.Equals( shortcut.callback_id, callbackId, StringComparison.OrdinalIgnoreCase ))
+                                                                                       action( this, shortcut );
+                                                                               } ) );
+        }
+
 
         /// <summary>
         /// Register a Command callback (e.g. /SlackDK with some text)
         /// </summary>
-        public void OnCommand( string command, Action< ISlackApp, SlashCommandPayload > action )
+        public void OnCommand( string command, Action< ISlackApp, SlashCommand > action )
         {
             _commandHandlers.Add(new CommandHandler(command, action));
         }
         
         record CommandHandler( 
             string Command, 
-            Action< ISlackApp, SlashCommandPayload > CommandAction );
+            Action< ISlackApp, SlashCommand > CommandAction );
 
         record ApiEventHandler( string?                     MessageType    = null,
                                 string?                     MessageSubType = null,
                                 Regex?                      Filter         = null,
-                                Action< ISlackApp, SlackMessage >? MessageAction  = null );
+                                Action< ISlackApp, SlackMessage >? MessageAction  = null,
+                                Action<ISlackApp, SlackMessage, SlackMessage>? MessageContainerAction = null);
 
         public void RegisterCommand< T >()
             where T : BaseSlackCommand, new()
