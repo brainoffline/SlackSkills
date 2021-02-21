@@ -149,12 +149,11 @@ namespace SlackForDotNet
             OnMessage< Goodbye >( ( _, msg ) => Reconnect() );
 
             OnMessage< BlockActions >( OnBlockActions );
+            OnMessage< BlockSuggestion>( OnBlockSuggestions );
             OnMessage< EventCallback >( OnEventCallback );
-            OnMessage< Interactive >( OnInteractive );
+            //OnMessage< Interactive >( OnInteractive );
             OnMessage< Disconnect >( OnDisconnect );
             OnMessage< Message >( OnAnyMessage );
-
-            RegisterCommand< HelpCommand >();
 
             // Establish websocket connection
             if (_socketModeAvailable && !string.IsNullOrWhiteSpace(AppLevelToken))
@@ -194,23 +193,21 @@ namespace SlackForDotNet
         private void OnInteractive(ISlackApp app, Interactive msg)
         {
             if (msg.payload is BlockSuggestion suggestion)
-                OnBlockSuggestions( this, suggestion, msg.envelope_id );
+                OnBlockSuggestions( this, suggestion, msg );
             else if (msg.payload != null)
                 RaiseApiEvent(msg.payload);
         }
         private void OnBlockActions(ISlackApp slackApp, BlockActions msg)
         {
-            var callbackId = msg.view?.callback_id;
+            var surface    = FindSurface( msg.view, msg.message );
 
-            var surface = _surfaces.FirstOrDefault(s => s.CallbackId == callbackId);
             surface?.Process(msg);
         }
-        private void OnBlockSuggestions(ISlackApp slackApp, BlockSuggestion msg, string envelopeId)
+        private void OnBlockSuggestions(ISlackApp slackApp, BlockSuggestion msg, IEnvelope<SlackMessage> envelope)
         {
-            var callbackId = msg.view?.callback_id;
+            var surface = FindSurface(msg.view, msg.message); 
 
-            var surface = _surfaces.FirstOrDefault(s => s.CallbackId == callbackId);
-            surface?.Process(msg, envelopeId);
+            surface?.Process(msg, envelope.envelope_id);
         }
 
         async Task<bool> GetSomeAccessTokens()
@@ -342,14 +339,14 @@ namespace SlackForDotNet
         /// <summary>
         /// Register callback for a particular type of message
         /// </summary>
-        public void OnMessage<T>([NotNull] Action<ISlackApp, T, IEnvelope<T> > action) 
+        public void OnMessage<T>([NotNull] Action<ISlackApp, T, IEnvelope<SlackMessage> > action) 
             where T : SlackMessage
         {
             var attr = MessageTypes.GetMessageAttributes<T>();
             _apiEventHandlers.Add(new ApiEventHandler(
                   MessageType: attr.Type,
                   MessageSubType: attr.SubType,
-                  MessageContainerAction:(_, msg, envelope) => action(this, (T)msg, (IEnvelope<T>)envelope)));
+                  MessageContainerAction:(_, msg, envelope) => action(this, (T)msg, (IEnvelope<SlackMessage>)envelope)));
         }
 
         /// <summary>
@@ -514,6 +511,19 @@ namespace SlackForDotNet
             return default;
         }
 
+        public async Task OpenSurface( SlackSurface surface, MessageBase msg )
+        {
+            RegisterSurface( surface );
+
+            var response = await Say( surface.Layouts, channel: msg.channel );
+
+            if (response is ChatPostMessageResponse chatResponse)
+            {
+                surface.ts      = chatResponse.ts;
+                surface.message = chatResponse.message;
+            }
+        }
+
         public async void Update( SlackSurface surface )
         {
             var pub = new ViewUpdate
@@ -543,6 +553,14 @@ namespace SlackForDotNet
                 // This came from a bot so do not action it
                 return;
             }
+
+            if (string.Equals( "help", msg.text, StringComparison.OrdinalIgnoreCase ) || msg.text == "?")
+            {
+                Say( "Available Commands\n\n```" + CommandHelp() + "```",
+                    msg.channel ?? "",
+                    msg.user );
+                return;
+            }
             
             var parser = FindParser(msg.text, out List<string>? parameters);
 
@@ -559,7 +577,7 @@ namespace SlackForDotNet
                 obj.SlackApp = app;
                 obj.Message  = msg;
 
-                var success = parser.ParseArguments(obj, msg.text, parameters);
+                var success = parser.ParseArguments( obj, args: parameters ); // msg.text, parameters);
 
                 if (success)
                     return;
@@ -579,9 +597,17 @@ namespace SlackForDotNet
             Say("```\n" + help + "\n```", msg.channel, ts: msg.ts);
         }
 
+        SlackSurface? FindSurface(View? view, MessageBase? message)
+        {
+            if (view != null)
+                return _surfaces.FirstOrDefault(s => s.CallbackId == view.callback_id);
+            else if (message != null)
+                return _surfaces.FirstOrDefault(s => s.ts == message.ts);
+            return default;
+        }
+
         IParamParser? FindParser(string? text, out List<string>? parameters)
         {
-            
             parameters = null;
             if (string.IsNullOrWhiteSpace(text))
                 return null;

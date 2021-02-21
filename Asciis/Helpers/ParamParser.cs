@@ -414,7 +414,7 @@ namespace Asciis
             }
 
             var method = actionMetadata.Method;
-            if (method == null && ( context.ActionName == "help" || context.ActionName == "?" || context.ParameterName == "help" || context.ParameterName == "?" ))
+            if (method == null && (context.ActionName == "help" || context.ActionName == "?" || context.ParameterName == "help" || context.ParameterName == "?"))
             {
                 context.HelpRequested = true;
 

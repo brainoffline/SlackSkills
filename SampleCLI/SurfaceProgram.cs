@@ -26,6 +26,9 @@ namespace SampleCLI
 
             _app.OnMessage<AppHomeOpened>(OnHomeOpenedSurface);
 
+            _app.RegisterCommand<BlahCommand>();
+            _app.RegisterCommand<YapCommand>();
+
         }
 
         async void OnAppMention(ISlackApp slackApp, AppMention msg)
@@ -111,6 +114,5 @@ namespace SampleCLI
 
             await _app.PublishHomepage(_home, msg);
         }
-
     }
 }

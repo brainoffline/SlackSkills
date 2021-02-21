@@ -19,14 +19,14 @@ namespace SlackForDotNet
         public          string?     retry_reason             { get; set; }
     }
     
-    public interface IEnvelope<out T> where T : class
+    public interface IEnvelope<out T> where T : SlackMessage
     {
         public string envelope_id              { get; }
         public bool   accepts_response_payload { get; }
         T?            payload                  { get; }
     }
 
-    public class Envelope<T> : Envelope, IEnvelope<T> where T : class
+    public class Envelope<T> : Envelope, IEnvelope<T> where T : SlackMessage
     {
         public T? payload { get; set; }
     }

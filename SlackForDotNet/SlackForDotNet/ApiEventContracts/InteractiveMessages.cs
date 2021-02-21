@@ -11,8 +11,11 @@ using System.Collections.Generic;
 
 namespace SlackForDotNet
 {
-    [SlackMessage( "interactive")]
-    public class Interactive : Envelope<SlackMessage> { }
+    [ SlackMessage( "interactive" ) ]
+    public class Interactive : Envelope< SlackMessage >, IEnvelope<SlackMessage>
+    {
+
+    }
 
     [SlackMessage( "shortcut")]
     public class GlobalShortcut : SlackMessage

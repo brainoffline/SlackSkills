@@ -21,15 +21,17 @@ namespace SlackForDotNet.Surface
         private                 string?                    _lastUpdated;
         
         protected static readonly Dictionary< string, View > Views = new ();
-        private static            int                        _ids   = 1;
+        private static            int                        _ids  = 1;
         protected readonly        ISlackApp                  App;
-        
+        public                    string?                    ts;
+        public                    MessageBase?               message;
+
         protected                 string?                    TriggerId { get; private set; }
 
         public    string?        ExternalId  { get; set; }
         public    int            UniqueId    { get; set; }
         public    string         UniqueValue { get; set; }
-        public    List< Layout > Layouts     { get; set; } = new ();
+        public    List< Layout > Layouts     { get; set; } = new ();    
         public    PlainText      Title       { get; set; } = "";
         public    User?          User        { get; private set; }
         protected Team?          Team        { get; private set; }
@@ -310,6 +312,19 @@ namespace SlackForDotNet.Surface
         protected void RaiseError(string msg)
         {
             // TODO: Allow program to whatever
+        }
+    }
+
+    public class InlineMessageSurface : SlackSurface
+    {
+        public InlineMessageSurface( 
+            [ NotNull ] ISlackApp app,
+            string title,
+            List<Layout> layouts
+            ) : base( app )
+        {
+            Title   = title;
+            Layouts = layouts;
         }
     }
 }

@@ -11,7 +11,7 @@ using System;
 
 namespace SlackForDotNet
 {
-    [Obsolete]
+    [Obsolete("")]
     public class Dialog
     {
         public string callback_id      { get; set; }
