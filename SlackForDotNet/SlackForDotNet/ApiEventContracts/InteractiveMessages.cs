@@ -52,6 +52,7 @@ namespace SlackForDotNet
     {
         public Team?              team                  { get; set; }
         public UserMinimal?       user                  { get; set; }
+        public string?            api_app_id            { get; set; }
         public string?            token                 { get; set; }
         public string?            trigger_id            { get; set; } 
         public View?              view                  { get; set; }

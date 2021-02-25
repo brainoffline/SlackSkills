@@ -26,7 +26,7 @@ namespace SlackForDotNet.Surface
         public                    string?                    ts;
         public                    MessageBase?               message;
 
-        protected                 string?                    TriggerId { get; private set; }
+        public string? TriggerId { get; private set; }
 
         public    string?        ExternalId  { get; set; }
         public    int            UniqueId    { get; set; }
@@ -49,6 +49,13 @@ namespace SlackForDotNet.Surface
             App = app;
             UniqueId = Interlocked.Increment( ref _ids );
             UniqueValue = $"_{UniqueId}_";
+        }
+
+        public SlackSurface Add( Layout layout )
+        {
+            Layouts.Add( layout );
+
+            return this;
         }
         
         private void UpdateState(object? values)
@@ -153,7 +160,7 @@ namespace SlackForDotNet.Surface
                     switch (element)
                     {
                         case ButtonElement btn:
-                            btn.RaiseClicked();
+                            btn.RaiseClicked(this, blockActions);
                             break;
                         case TextInputElement textInput:
                             var tia = (TextInputAction)slackAction;
@@ -319,12 +326,24 @@ namespace SlackForDotNet.Surface
     {
         public InlineMessageSurface( 
             [ NotNull ] ISlackApp app,
-            string title,
-            List<Layout> layouts
+            string title
             ) : base( app )
         {
             Title   = title;
-            Layouts = layouts;
+        }
+    }
+
+    public class DialogSurface : SlackSurface
+    {
+        public ModalView View { get; }
+
+        public DialogSurface(
+            [NotNull] ISlackApp app,
+            ModalView view
+            ) : base(app)
+        {
+            Title = view.title;
+            View  = view;
         }
     }
 }

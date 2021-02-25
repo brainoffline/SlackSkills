@@ -28,11 +28,11 @@ namespace SampleCLI
                                           {
                                               action_id = "magic-button",
                                               text      = "Magic",
-                                              Clicked = ( sender, args ) =>
-                                                        {
-                                                            _statusLayout.text = ":banana: :sob: Magic is hard";
-                                                            slackApp.Update( this );
-                                                        }
+                                              Clicked = ( ( surface, button, actions ) => 
+                                                          { 
+                                                              _statusLayout.text = ":banana: :sob: Magic is hard";
+                                                              slackApp.Update( this );
+                                                          } ) 
                                           }
                           },
                           new InputLayout

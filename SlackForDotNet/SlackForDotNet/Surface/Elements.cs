@@ -46,6 +46,8 @@ namespace SlackForDotNet.Surface
         }
     }
 
+    public delegate void ClickHandler( SlackSurface surface, ButtonElement button, BlockActions actions );
+
     /// <summary>
     ///     Button Element
     /// </summary>
@@ -63,9 +65,9 @@ namespace SlackForDotNet.Surface
         public ButtonStyle? style   { get; set; }
         public Confirm?     confirm { get; set; }
 
-        private event EventHandler ClickEvent;
+        private event ClickHandler ClickEvent;
 
-        public EventHandler Clicked
+        public ClickHandler Clicked
         {
             set => ClickEvent += value;
         }
@@ -76,9 +78,9 @@ namespace SlackForDotNet.Surface
             this.text = text;
         }
 
-        public void RaiseClicked()
+        public void RaiseClicked(SlackSurface surface, BlockActions actions)
         {
-            ClickEvent?.Invoke( this, EventArgs.Empty );
+            ClickEvent?.Invoke( surface, this, actions );
         }
     }
 

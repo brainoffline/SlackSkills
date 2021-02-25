@@ -511,6 +511,17 @@ namespace SlackForDotNet
             return default;
         }
 
+        public async Task OpenSurface( DialogSurface surface, MessageBase msg )
+        {
+            RegisterSurface(surface);
+
+            var response = Send< ViewOpen, ViewResponse >( new ViewOpen
+                                                           {
+                                                               trigger_id = surface.TriggerId, 
+                                                               view = surface.View
+                                                           } );
+        }
+
         public async Task OpenSurface( SlackSurface surface, MessageBase msg )
         {
             RegisterSurface( surface );

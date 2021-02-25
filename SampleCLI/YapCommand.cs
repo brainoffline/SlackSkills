@@ -28,6 +28,9 @@ namespace SampleCLI
                 case YapOptions.Message:
                     SendMessage();
                     break;
+                case YapOptions.Dialog:
+                    SendDialog();
+                    break;
             }
         }
 
@@ -35,25 +38,20 @@ namespace SampleCLI
         {
             if (!string.IsNullOrEmpty( Message.thread_ts ))
             {
-                var surface = new InlineMessageSurface( SlackApp!,
-                                                       "Yappity yap!",
-                                                       new List< Layout >()
-                                                       {
-                                                           new HeaderLayout( "Yappity yap!" ),
-                                                           new SectionLayout
-                                                           {
-                                                               block_id = "yappity-yap-id",
-                                                               text = "Don't talk back",
-                                                               accessory = new ButtonElement( "dont-talk-back", "ok" )
-                                                                           {
-                                                                               Clicked = ( s, e ) =>
-                                                                                         {
-                                                                                             TalkBack();
-                                                                                         }
-                                                                           }
-                                                           }
-                                                       }
-                                                      ) { CallbackId = "yap-callback-id" };
+                var surface = ( new InlineMessageSurface( SlackApp!, "Yappity yap!" ) { CallbackId = "yap-callback-id" } )
+                             .Add( new HeaderLayout( "Yappity yap!" ) )
+                             .Add( new SectionLayout
+                                   {
+                                       block_id = "yappity-yap-id",
+                                       text     = "Don't talk back",
+                                       accessory = new ButtonElement( "dont-talk-back", "ok" )
+                                                   {
+                                                       Clicked = ( slackSurface, button, actions ) =>
+                                                                 {
+                                                                     TalkBack();
+                                                                 }
+                                                   }
+                                   } );
                 SlackApp!.OpenSurface( surface, Message );
             }
             else
@@ -67,11 +65,41 @@ namespace SampleCLI
         {
             SlackApp!.Say( "What cha gonna do bout it!", channel: Message.channel );
         }
+
+        private void SendDialog()
+        {
+            var surface = new InlineMessageSurface( SlackApp!, "Yappity yap!" )
+                          {
+                              CallbackId = "yap-callback-id"
+                          }
+                         .Add( new HeaderLayout( "Yappity yap!" ) )
+                         .Add( new SectionLayout
+                               {
+                                   block_id  = "yappity-yap-id",
+                                   text      = "Don't press the button",
+                                   accessory = new ButtonElement( "dont-talk-back", "ok" )
+                                               {
+                                                   Clicked = ( slackSurface, button, actions ) => OpenDialog( slackSurface )
+                                               }
+                               } );
+            SlackApp!.OpenSurface(surface, Message);
+        }
+
+        private void OpenDialog( SlackSurface slackSurface )
+        {
+            var view = (ModalView)new ModalView { title = "Yappity Yapp Modal", submit = "Do It!" }
+               .Add( new InputLayout( "Useful information goes here", new TextInputElement { action_id = "useful-id" } ) );
+
+            var surface = new DialogSurface( SlackApp!, view );
+
+            SlackApp!.OpenSurface( surface, Message );
+        }
     }
 
     public enum YapOptions
     {
         NotSet,
-        Message
+        Message,
+        Dialog
     }
 }
