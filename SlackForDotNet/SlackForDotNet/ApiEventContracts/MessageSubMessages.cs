@@ -75,12 +75,7 @@ namespace SlackForDotNet
     [SlackMessage( "message", subType: "channel_posting_permissions", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" })]
     public class MessageChannelPostingPermissions : MessageBase
     {
-        public string ts           { get; set; }
-        public string user         { get; set; }
-        public string text         { get; set; }
-        public string channel      { get; set; }
         public string event_ts     { get; set; }
-        public string channel_type { get; set; }
     }
 
     [SlackMessage( "message", subType: "channel_purpose", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
@@ -166,20 +161,17 @@ namespace SlackForDotNet
     [ SlackMessage( "message", subType: "message_changed", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageChanged : MessageBase
     {
-        public bool?          hidden           { get; set; }
         public MessageGeneral message          { get; set; }
         public MessageGeneral previous_message { get; set; }
     }
     [ SlackMessage( "message", subType: "message_deleted", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageDeleted : MessageBase
     {
-        public bool?  hidden     { get; set; }
         public string deleted_ts { get; set; }
     }
     [ SlackMessage( "message", subType: "message_replied", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageReplied : MessageBase
     {
-        public bool?          hidden  { get; set; }
         public MessageGeneral message { get; set; }
     }
 

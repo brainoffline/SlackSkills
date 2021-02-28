@@ -27,21 +27,12 @@ namespace SlackForDotNet.Surface
         public string? TriggerId { get; private set; }
         public View?   View      { get; set; }
 
-        public    string?        ExternalId  { get; set; }
         public    int            UniqueId    { get; set; }
         public    string         UniqueValue { get; set; }
         public    List< Layout > Layouts     { get; set; } = new ();    
         public    PlainText      Title       { get; set; } = "";
-        public    User?          User        { get; private set; }
-        protected Team?          Team        { get; private set; }
 
-        public string? ViewId     { get; set; }
-        public string? AppId      { get; set; }
-        public string? BotId      { get; set; }
-        public string? TeamId     { get; set; }
-        public string? CallbackId { get; set; }
-        public string? Hash       { get; set; }
-        public string? RootViewId { get; set; }
+        public Action< ViewSubmission >? Submitted = null;
 
         public SlackSurface( [NotNull] ISlackApp app )
         {
@@ -68,7 +59,6 @@ namespace SlackForDotNet.Surface
                 return;
             foreach (var pair in state)
             {
-                var layout = Layouts.FirstOrDefault(l => l.block_id == pair.Key);
                 var blockId = pair.Key;
                 foreach (var actionPair in pair.Value)
                 {
@@ -135,11 +125,21 @@ namespace SlackForDotNet.Surface
         
         }
 
+        public void Process( ViewSubmission viewSubmission, string envelopeId )
+        {
+            TriggerId = viewSubmission.trigger_id ?? "";
+
+            UpdateState(viewSubmission.view?.state?.values);
+
+            Submitted?.Invoke( viewSubmission );
+
+            var result = new ViewSubmissionResult();
+            SlackApp.Push( new AcknowledgeResponse<ViewSubmissionResult>{ envelope_id = envelopeId, payload = result } );
+        }
+
         public void Process( BlockSuggestion blockSuggestion, string envelopeId )
         {
             TriggerId = blockSuggestion.trigger_id ?? "";
-            User      = blockSuggestion.user;
-            Team      = blockSuggestion.team;
 
             UpdateState(blockSuggestion.state?.values ?? blockSuggestion.view?.state?.values);
 
@@ -166,11 +166,6 @@ namespace SlackForDotNet.Surface
         public void Process(BlockActions blockActions)
         {
             TriggerId = blockActions.trigger_id ?? "";
-            User      = blockActions.user;
-            Team      = blockActions.team;
-            var containerType = blockActions.container?.type ?? "";
-            var view          = blockActions.view;
-            var responseUrl   = blockActions.response_url;
             
             UpdateState( blockActions.state?.values ?? blockActions.view?.state?.values );
             
@@ -344,7 +339,7 @@ namespace SlackForDotNet.Surface
             RaiseError(logMsg);
         }
 
-        protected void RaiseError(string msg)
+        protected virtual void RaiseError(string msg)
         {
             // TODO: Allow program to whatever
         }

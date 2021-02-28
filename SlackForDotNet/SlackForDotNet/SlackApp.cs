@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -157,6 +158,7 @@ namespace SlackForDotNet
             OnMessage< SlashCommand >( OnSlashCommand );
             OnMessage< BlockActions >( OnBlockActions );
             OnMessage< BlockSuggestion>( OnBlockSuggestions );
+            OnMessage< ViewSubmission>( OnViewSubmission );
             OnMessage< EventCallback >( OnEventCallback );
             OnMessage< Disconnect >( OnDisconnect );
             OnMessage< Message >( OnAnyMessage );
@@ -205,6 +207,13 @@ namespace SlackForDotNet
         private void OnBlockSuggestions(ISlackApp slackApp, BlockSuggestion msg, IEnvelope<SlackMessage> envelope)
         {
             var surface = FindSurface(msg.view, msg.message); 
+
+            surface?.Process(msg, envelope.envelope_id);
+        }
+
+        private void OnViewSubmission(ISlackApp slackApp, ViewSubmission msg, IEnvelope<SlackMessage> envelope)
+        {
+            var surface = FindSurface(msg.view, null);
 
             surface?.Process(msg, envelope.envelope_id);
         }
@@ -291,15 +300,12 @@ namespace SlackForDotNet
             }
 
             var help = parser.Help();
-            Say("```\n" + help + "\n```", channel: shortcut.user.id);
+            Say("```\n" + help + "\n```", channel: shortcut.channel.id, shortcut.user.id);
 
         }
 
         private void OnSlashCommand(ISlackApp slackApp, SlashCommand slashCommand, IEnvelope<SlackMessage> envelope)
         {
-            if (string.IsNullOrWhiteSpace(slashCommand.text))
-                return;
-
             if (string.Equals("help", slashCommand.text, StringComparison.OrdinalIgnoreCase) || slashCommand.text == "?")
             {
                 Say("Available Commands\n\n```" + CommandHelp() + "```",
@@ -660,7 +666,7 @@ namespace SlackForDotNet
         {
             string key = $"home_{msg.user}";
 
-            if (_surfaces.Exists( s => s.ExternalId == key ))
+            if (_surfaces.Exists( s => s.View!.external_id == key ))
                 return default;
             
             if (hometab.Layouts.Count > 0)
@@ -674,34 +680,35 @@ namespace SlackForDotNet
                                          callback_id = key,
                                          blocks          = hometab.Layouts
                                      }
-
                           };
-                var result = await Send<ViewsPublish, ViewsPublishResponse>(pub);
-                if (result?.ok == true)
-                {
-                    hometab.ViewId     = result.view.id;
-                    hometab.AppId      = result.view.app_id;
-                    hometab.BotId      = result.view.bot_id;
-                    hometab.TeamId     = result.view.team_id;
-                    hometab.CallbackId = result.view.callback_id;
-                    hometab.ExternalId = result.view.external_id;
-                    hometab.Hash       = result.view.hash;
-                    hometab.RootViewId = result.view.root_view_id;
+                hometab.View ??= pub.view;
 
-                    if (result.view.blocks != null)
+                var response = await Send<ViewsPublish, ViewsPublishResponse>(pub);
+                if (response?.ok == true)
+                {
+                    hometab.View!.id          =   response.view.id;
+                    hometab.View.app_id       =   response.view.app_id;
+                    hometab.View.bot_id       =   response.view.bot_id;
+                    hometab.View.team_id      =   response.view.team_id;
+                    hometab.View.callback_id  =   response.view.callback_id;
+                    hometab.View.external_id  =   response.view.external_id;
+                    hometab.View.hash         =   response.view.hash;
+                    hometab.View.root_view_id =   response.view.root_view_id;
+
+                    if (response.view.blocks != null)
                     {
                         // Update block_id's
-                        for (int i = 0; i < result.view.blocks.Count; i++)
+                        for (int i = 0; i < response.view.blocks.Count; i++)
                         {
-                            var slackView = result.view.blocks[ i ];
+                            var slackView = response.view.blocks[ i ];
                             var layout    = hometab.Layouts[ i ];
                             if (string.IsNullOrEmpty( layout.block_id ))
                                 layout.block_id = slackView.block_id;
                         }
                     }
 
-                    if (result.view?.state != null)
-                        hometab.UpdateState(result.view?.state?.values);
+                    if (response.view?.state != null)
+                        hometab.UpdateState(response.view?.state?.values);
 
                     RegisterSurface( hometab );
                 }
@@ -709,23 +716,44 @@ namespace SlackForDotNet
             return default;
         }
 
-        public async Task OpenModal( ModalView view, string triggerId )
+        public async Task OpenModal( SlackSurface surface, string triggerId )
         {
             if (string.IsNullOrEmpty( triggerId ))
                 throw new ArgumentException( "TriggerId must contain a value" );
-            if (view == null)
-                throw new ArgumentException("View must contain a value");
+
+            surface.View ??= new ModalView
+                             {
+                                 title = surface.Title,
+                                 submit = "submit",
+                                 close = "close",
+                                 notify_on_close = true
+                             };
+            surface.View.callback_id ??= surface.UniqueValue;
+            if (surface.Layouts.Count == 0 && surface.View?.blocks != null)
+                surface.Layouts.AddRange(surface.View.blocks);
+            surface.View!.blocks = surface.Layouts;
+
+            foreach (var layout in surface.Layouts)
+                layout.block_id ??= surface.View.callback_id + new Random().NextDouble();
 
             var response = await Send< ViewOpen, ViewResponse >( new ViewOpen
-                                                           {
-                                                               trigger_id = triggerId, 
-                                                               view = view
-                                                           } );
+                                                                 {
+                                                                     trigger_id = triggerId, 
+                                                                     view = surface.View
+                                                                 } );
             if (response?.ok == true)
             {
-                var surface = new SlackSurface( this ) { View = view };
-                if (response?.view.state != null)
-                    surface.UpdateState( response.view.state );
+                surface.View.id           = response.view.id;
+                surface.View.app_id       = response.view.app_id;
+                surface.View.bot_id       = response.view.bot_id;
+                surface.View.team_id      = response.view.team_id;
+                surface.View.callback_id  = response.view.callback_id;
+                surface.View.external_id  = response.view.external_id;
+                surface.View.hash         = response.view.hash;
+                surface.View.root_view_id = response.view.root_view_id;
+                
+                if (response?.view.state?.values != null)
+                    surface.UpdateState( response.view.state.values );
 
                 RegisterSurface( surface );
             }
@@ -751,20 +779,20 @@ namespace SlackForDotNet
         {
             var pub = new ViewUpdate
                       {
-                          hash        = surface.Hash,
-                          view_id     = surface.ViewId,
+                          hash        = surface.View.hash,
+                          view_id     = surface.View.id,
                           view = new HometabView
                                  {
-                                     callback_id  = surface.CallbackId,
-                                     external_id  = surface.ExternalId,
+                                     callback_id  = surface.View.callback_id,
+                                     external_id  = surface.View.external_id,
                                      blocks       = surface.Layouts
                                  }
                       };
-            var result = await Send<ViewUpdate, ViewResponse>(pub);
-            if (result?.ok == true)
+            var response = await Send<ViewUpdate, ViewResponse>(pub);
+            if (response?.ok == true)
             {
-                surface.Hash   = result.view.hash;
-                surface.ViewId = result.view.id;
+                surface.View.hash = response.view.hash;
+                surface.View.id   = response.view.id;
             }
         }
 
@@ -817,13 +845,13 @@ namespace SlackForDotNet
             }
 
             var help = parser.Help();
-            Say("```\n" + help + "\n```", msg.channel, ts: msg.ts);
+            Say("```\n" + help + "\n```", msg.channel, msg.user);
         }
 
         SlackSurface? FindSurface(View? view, MessageBase? message)
         {
             if (view != null)
-                return _surfaces.FirstOrDefault(s => s.CallbackId == view.callback_id);
+                return _surfaces.FirstOrDefault(s => s.View?.callback_id == view.callback_id);
             else if (message != null)
                 return _surfaces.FirstOrDefault(s => s.ts == message.ts);
             return default;

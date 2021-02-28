@@ -17,11 +17,10 @@ namespace SampleCLI
         {
             if (extras.Count > 0)
                 Blah = extras[0];
-            SlackApp?.SayToChannel(string.IsNullOrWhiteSpace(Blah)
+            SlackApp?.Say(string.IsNullOrWhiteSpace(Blah)
                                        ? "Hello"
                                        : $"Hello to {Blah}. :wave:",
-                                   null,
-                                   channel: Message?.channel ?? "");
+                                   Message!.channel);
         }
     }
 }

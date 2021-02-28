@@ -82,7 +82,6 @@ namespace SlackForDotNet
         public bool?      notify_on_close { get; set; }
         public bool?      submit_disabled { get; set; } // Primary for configuration modals
 
-
         public ModalView()
         {
             type = "modal";

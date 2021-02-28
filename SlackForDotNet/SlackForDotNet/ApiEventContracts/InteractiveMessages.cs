@@ -70,4 +70,10 @@ namespace SlackForDotNet
         public View?        view       { get; set; }
         public bool?        is_cleared { get; set; }
     }
+
+    public class ViewSubmissionResult
+    {
+        public string                     response_action { get; set; } // null, clear, errors
+        public Dictionary<string, string> errors          { get; set; }
+    }
 }

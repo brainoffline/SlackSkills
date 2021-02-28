@@ -25,14 +25,17 @@ namespace SampleCLI
             switch (Options)
             {
                 case YapOptions.NotSet:
-                    SlackApp!.Say( "Choose your options first", Message.channel, Message.user );
+                    var message = "Choose your options first\n```\n" + new ParamParser<YapMessageCommand>().Help() + "\n```";
+                    SlackApp!.Say( message, Message.channel, Message.user );
                     break;
                 case YapOptions.Message:
                     SendMessage();
                     break;
                 case YapOptions.Dialog:
-                    InlineMessage();
+                    DialogMessage();
                     break;
+                default: 
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
@@ -42,7 +45,6 @@ namespace SampleCLI
 
             var surface = new SlackSurface( SlackApp! )
                             {
-                                CallbackId = "yap-callback-id",
                                 Title = "Yappity yap!"
                             }
                          .Add( new HeaderLayout( "Yappity yap!" ) )
@@ -68,14 +70,13 @@ namespace SampleCLI
             SlackApp!.Say( "What cha gonna do bout it!", channel: Message.channel );
         }
 
-        private void InlineMessage()
+        private void DialogMessage()
         {
             if (Message == null) return;
 
             var surface = new SlackSurface( SlackApp! )
                           {
-                              CallbackId = "yap-callback-id",
-                              Title = "Yappity yap!"
+                              Title = "Yappity yap!",
                           }
                          .Add( new HeaderLayout( "Yappity yap!" ) )
                          .Add( new SectionLayout
@@ -90,13 +91,24 @@ namespace SampleCLI
             SlackApp!.OpenSurface(surface, Message.channel);
         }
 
-        private void OpenModal( string triggerId )
+        private async void OpenModal( string triggerId )
         {
-            var view = (ModalView)new ModalView { title = "Yappity Yapp Modal", submit = "Do It!" }
-               .Add( new InputLayout( "Useful information goes here",
-                                     new TextInputElement { action_id = "useful-id" } ) );
+            TextInputElement? tie     = null;
+            var               surface = new SlackSurface( SlackApp! )
+                                        {
+                                            Title = "Yappity Yapp Modal"
+                                        }
+               .Add(new InputLayout("Useful information goes here",
+                                    tie = (new TextInputElement { action_id = "useful-id" })));
 
-            SlackApp!.OpenModal( view, triggerId );
+            await SlackApp!.OpenModal( surface, triggerId );
+            if (surface != null)
+                surface.Submitted = Submitted;
+
+            void Submitted(ViewSubmission vs)
+            {
+                SlackApp!.Say($"{tie!.value}", channel: Message!.channel);
+            }
         }
     }
 

@@ -134,8 +134,8 @@ namespace SlackForDotNet.Surface
         public InputLayout() : base("input") { }
         public InputLayout( PlainText label, Element element ) : base( "input" )
         {
-            this.label   = label;
-            this.element = element;
+            this.label    = label;
+            this.element  = element;
         }
     }
 

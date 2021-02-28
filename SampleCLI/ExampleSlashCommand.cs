@@ -8,7 +8,7 @@ using SlackForDotNet.Surface;
 
 namespace SampleCLI
 {
-    [Command("/slashdk", Description = "Slash Command Example")]
+    [Command("/slackdk", Description = "Slash Command Example")]
     internal class ExampleSlashCommand : SlackSlashCommand
     {
         [ Param( "c|Comment", "A comment to display" ) ]

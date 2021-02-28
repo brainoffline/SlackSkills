@@ -23,7 +23,7 @@ namespace SampleCLI
             var program = new Program();
 
             program.SetupSlackApp( args );
-            program.SetupSurface();
+            program.RegisterMessageTypes();
 
             await program.Run();
         }
@@ -104,13 +104,14 @@ namespace SampleCLI
             Console.WriteLine( "Slack CLI Stopped" );
         }
 
-        public void SetupSurface()
+        public void RegisterMessageTypes()
         {
             _app.OnMessage<AppMention>(OnAppMention);
 
             _app.RegisterHometabSurface<ExampleHometabSurface>();
             _app.RegisterGlobalShortcutCommand<ExampleGlobalShortcutCommand>();
             _app.RegisterMessageShortcutCommand<ExampleMessageShortcutCommand>();
+
             _app.RegisterSlashCommand<ExampleSlashCommand>();
             _app.RegisterMessageCommand<ExampleMessageCommand>();
             _app.RegisterMessageCommand<BlahMessageCommand>();
@@ -119,10 +120,20 @@ namespace SampleCLI
 
         async void OnAppMention(ISlackApp slackApp, AppMention msg)
         {
-            await slackApp.SayToUser("Thanks for the mention brah", null, msg.channel, msg.user);
+            // Visible to everyone in the channel
+            await slackApp.Say( "Thanks for the mention brah", msg.channel );
+
+            // Visible to only the user in the channel
+            await slackApp.Say("Thanks for the mention brah", msg.channel, msg.user);
+
+            // Visible as a thread off the main channel
+            await slackApp.Say( "Thanks for the mention brah", msg.channel, user:null, msg.ts );
+
+            // Sent to the bot messages
+            await slackApp.Say("Thanks for the mention brah", msg.user);
         }
 
-        // Open up you https://api.slack.com/apps/  Event subscriptions. Update to include ONLY the scopes you need
+        // Open up you https://api.slack.com/apps/  Event subscriptions. Update to include *ONLY* the scopes you need
         private static readonly string DefaultBotScope = BuildScope(
                                                                     BotScopes.AppMentions_Read,
                                                                     BotScopes.Chat_Write,
