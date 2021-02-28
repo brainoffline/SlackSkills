@@ -19,5 +19,6 @@ namespace SlackForDotNet
         public string? team         { get; set; }
         public string  channel      { get; set; }
         public string? channel_type { get; set; }
+        public bool?   hidden       { get; set; }
     }
 }

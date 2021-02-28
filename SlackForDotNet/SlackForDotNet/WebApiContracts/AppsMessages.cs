@@ -40,4 +40,13 @@ namespace SlackForDotNet.WebApiContracts
         public List<Authorization>? authroizations { get; set; }
     }
 
+    [ SlackMessage( "apps.uninstall",
+                      apiType: Msg.Json | Msg.FormEncoded | Msg.BotToken,
+                      scope: "" ) ]
+    public class AppsUninstall : SlackMessage
+    {
+        public string client_id     { get; set; }
+        public string client_secret { get; set; }
+    }
+
 }

@@ -11,17 +11,9 @@
 
 namespace SlackForDotNet.WebApiContracts
 {
-    /*
-    public class MessageRequest : EventMessage
-    {
-        public string token { get; set; }
-    }
-
-    public class MessageResponse : EventResponse
-    {
-    }
-    */
-
     [ SlackMessage( "api.test", apiType: Msg.UserToken ) ]
-    public class ApiTestRequest : SlackMessage { }
+    public class ApiTestRequest : SlackMessage
+    {
+        public string? error { get; set; }
+    }
 }

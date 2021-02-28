@@ -18,9 +18,18 @@ namespace SlackForDotNet
         public string value    { get; set; }
     }
 
-    [ SlackMessage( "emoji_changed", subType: "remove", apiType: Msg.RTM | Msg.Event, scope: "emoji:read" ) ]
+    [SlackMessage( "emoji_changed", subType: "remove", apiType: Msg.RTM | Msg.Event, scope: "emoji:read")]
     public class EmojiRemovedMessage : SlackMessage
     {
-        public string[] names    { get; set; }
+        public string[] names { get; set; }
+    }
+
+    [SlackMessage( "emoji_changed", subType: "rename", apiType: Msg.RTM | Msg.Event, scope: "emoji:read")]
+    public class EmojiRenamedMessage : SlackMessage
+    {
+        public string old_name { get; set; }
+        public string new_name { get; set; }
+        public string value    { get; set; }
+        public string event_ts { get; set; }
     }
 }

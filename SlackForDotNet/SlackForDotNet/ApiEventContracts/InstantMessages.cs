@@ -45,32 +45,4 @@ namespace SlackForDotNet
         public string user    { get; set; }
         public string channel { get; set; }
     }
-
-    [ SlackMessage( "mpim_close", scope: "im:read" ) ]
-    public class MpimClose : SlackMessage
-    {
-        public string user    { get; set; }
-        public string channel { get; set; }
-    }
-
-    [ SlackMessage( "mpim_history_changed", scope: "mpim:history" ) ]
-    public class MpimHistoryChanged : SlackMessage
-    {
-        public string latest   { get; set; }
-        public string ts       { get; set; }
-        public int?   is_mpim  { get; set; }
-    }
-
-    [ SlackMessage( "mpim_joined", scope: "mpim:read" ) ]
-    public class MpimJoined : SlackMessage
-    {
-        public Channel channel { get; set; }
-    }
-
-    [ SlackMessage( "mpim_open", scope: "im:read" ) ]
-    public class MpimOpen : SlackMessage
-    {
-        public string user    { get; set; }
-        public string channel { get; set; }
-    }
 }

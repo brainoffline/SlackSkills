@@ -37,7 +37,15 @@ namespace SlackForDotNet
         public string ts       { get; set; }
     }
 
-    [ SlackMessage( "channel_joined" ) ]
+    [SlackMessage( "channel_id_changed", apiType: Msg.RTM | Msg.Event, scopes: new[] { "channels:history", "groups:history", "mpim:history" })]
+    public class ChannelIdChanged : SlackMessage
+    {
+        public string old_channel_id { get; set; }
+        public string new_channel_id { get; set; }
+        public string event_ts       { get; set; }
+    }
+
+    [SlackMessage( "channel_joined" ) ]
     public class ChannelJoined : SlackMessage
     {
         public Channel channel { get; set; }

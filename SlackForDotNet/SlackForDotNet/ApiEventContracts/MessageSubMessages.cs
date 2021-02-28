@@ -72,7 +72,18 @@ namespace SlackForDotNet
         public string old_name { get; set; }
     }
 
-    [ SlackMessage( "message", subType: "channel_purpose", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
+    [SlackMessage( "message", subType: "channel_posting_permissions", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" })]
+    public class MessageChannelPostingPermissions : MessageBase
+    {
+        public string ts           { get; set; }
+        public string user         { get; set; }
+        public string text         { get; set; }
+        public string channel      { get; set; }
+        public string event_ts     { get; set; }
+        public string channel_type { get; set; }
+    }
+
+    [SlackMessage( "message", subType: "channel_purpose", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageChannelPurpose : MessageBase
     {
         public string purpose { get; set; }
@@ -172,12 +183,6 @@ namespace SlackForDotNet
         public MessageGeneral message { get; set; }
     }
 
-    [SlackMessage( "message", subType: "message_pinned", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" })]
-    public class MessagePinned : MessageBase
-    {
-        public string         item_type { get; set; }
-        public MessageGeneral item      { get; set; }
-    }
     [SlackMessage( "message", subType: "pinned_item", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" })]
     public class MessagePinnedItem : MessageBase
     {

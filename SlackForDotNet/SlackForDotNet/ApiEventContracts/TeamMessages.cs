@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 #pragma warning disable 8618 // Models are de-serialised, so shouldn't be null
 
@@ -11,7 +12,19 @@
 
 namespace SlackForDotNet
 {
-    [ SlackMessage( "team_domain_change", apiType: Msg.RTM | Msg.Event, scope: "team:read" ) ]
+    [SlackMessage( "team_access_granted", apiType: Msg.RTM | Msg.Event, scope: "team:read")]
+    public class TeamAccessGranted : SlackMessage
+    {
+        public List<string> team_ids { get; set; }
+    }
+
+    [SlackMessage( "team_access_revoked", apiType: Msg.RTM | Msg.Event, scope: "team:read")]
+    public class TeamAccessRevoked : SlackMessage
+    {
+        public List<string> team_ids { get; set; }
+    }
+
+    [SlackMessage( "team_domain_change", apiType: Msg.RTM | Msg.Event, scope: "team:read" ) ]
     public class TeamDomainChange : SlackMessage
     {
         public string url    { get; set; }
@@ -41,19 +54,26 @@ namespace SlackForDotNet
     public class TeamPrefChange : SlackMessage
     {
         public string name { get; set; }
-
-        
-        public string? value { get; set; }
+        public object? value { get; set; }
     }
 
     [ SlackMessage( "team_profile_change" ) ]
-    public class TeamProfileChange : SlackMessage { }
+    public class TeamProfileChange : SlackMessage
+    {
+        public object profile { get; set; }
+    }
 
     [ SlackMessage( "team_profile_delete" ) ]
-    public class TeamProfileDelete : SlackMessage { }
+    public class TeamProfileDelete : SlackMessage
+    {
+        public object profile { get; set; }
+    }
 
     [ SlackMessage( "team_profile_reorder" ) ]
-    public class TeamProfileReorder : SlackMessage { }
+    public class TeamProfileReorder : SlackMessage
+    {
+        public object profile { get; set; }
+    }
 
     [ SlackMessage( "team_rename", apiType: Msg.RTM | Msg.Event, scope: "team:read" ) ]
     public class TeamRename : SlackMessage

@@ -17,4 +17,10 @@ namespace SlackForDotNet
         public string? name   { get; set; }
         public string? domain { get; set; }
     }
+
+    public class TeamName
+    {
+        public string  team_id { get; set; }
+        public string? name    { get; set; }
+    }
 }

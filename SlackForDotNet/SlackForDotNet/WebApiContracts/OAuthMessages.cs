@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 #pragma warning disable 8618 // Models are de-serialised, so shouldn't be null
 
@@ -11,29 +12,6 @@
 
 namespace SlackForDotNet.WebApiContracts
 {
-    [Obsolete]
-    [ SlackMessage( "oauth.access" ) ]
-    public class OAuthAccess : SlackMessage
-    {
-        public string client_id      { get; set; }
-        public string client_secret  { get; set; }
-        public string code           { get; set; }
-        public string redirect_uri   { get; set; }
-        public string single_channel { get; set; }
-    }
-
-    [Obsolete]
-    public class OAuthAccessResponse : MessageResponse
-    {
-        public string          access_token     { get; set; }
-        public string          scope            { get; set; }
-        public string          team_name        { get; set; }
-        public string          team_id          { get; set; }
-        public string          enterprise_id    { get; set; }
-        public Bot             bot              { get; set; }
-        public IncomingWebhook incoming_webhook { get; set; }
-    }
-    
     [SlackMessage( "oauth.v2.access", apiType: Msg.FormEncoded)]
     public class OAuthAccess2 : SlackMessage
     {
@@ -76,4 +54,19 @@ namespace SlackForDotNet.WebApiContracts
         public string team_id { get; set; }
         public string user_id { get; set; }
     }
+
+    [ SlackMessage( "auth.teams.list", apiType: Msg.FormEncoded ) ]
+    public class AuthTeamsList : SlackMessage
+    {
+        public string? cursor       { get; set; }
+        public bool?   include_icon { get; set; }
+        public int?    limit        { get; set; }
+    }
+
+    public class AuthTeamsListResponse : MessageResponse
+    {
+        public List<Team> teams              { get; set; }
+        public MetaData   response_meta_data { get; set; }
+    }
+
 }

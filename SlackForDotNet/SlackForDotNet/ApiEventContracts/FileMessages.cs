@@ -18,7 +18,24 @@ namespace SlackForDotNet
         public SlackFile file    { get; set; }
     }
 
-    [ SlackMessage( "file_created", apiType: Msg.RTM | Msg.Event, scope: "file:read" ) ]
+    [SlackMessage( "file_comment_added", apiType: Msg.RTM | Msg.Event, scope: "file:read")]
+    public class FileCommentAdded : SlackMessage
+    {
+        public string    file_id { get; set; }
+        public Comment   comment { get; set; }
+        public SlackFile file    { get; set; }
+    }
+
+    [SlackMessage( "file_comment_deleted", apiType: Msg.RTM | Msg.Event, scope: "file:read")]
+    public class FileCommentDeleted : SlackMessage
+    {
+        public string    file_id { get; set; }
+        public string    comment { get; set; }
+        public SlackFile file    { get; set; }
+    }
+
+
+    [SlackMessage( "file_created", apiType: Msg.RTM | Msg.Event, scope: "file:read" ) ]
     public class FileCreated : SlackMessage
     {
         public string    file_id { get; set; }
