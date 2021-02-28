@@ -90,6 +90,8 @@ namespace SlackForDotNet
             where TResponse : MessageResponse
         {
             var messageAttribute = MessageTypes.GetMessageAttributes<TRequest>();
+            if (messageAttribute == null) return default;
+
             if (request != null)
             {
                 request.type    = messageAttribute.Type;
@@ -166,6 +168,8 @@ namespace SlackForDotNet
             where TResponse : MessageResponse
         {
             var responseAttrs = MessageTypes.GetMessageAttributes<TRequest>();
+
+            if (responseAttrs == null) return default;
 
             queryParameters ??= new Parameters(request);
 

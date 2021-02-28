@@ -8,7 +8,7 @@ using SlackForDotNet;
 namespace SampleCLI
 {
     [Command( "Blah", Description = "Blah command using Slack as a command line interpreter")]
-    internal class BlahCommand : BaseSlackCommand
+    internal class BlahMessageCommand : SlackMessageCommand
     {
         [Param( "b|Blah", "Blah parameter")]
         public string? Blah { get; set; }

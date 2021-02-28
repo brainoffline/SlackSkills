@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -52,15 +53,17 @@ namespace SlackForDotNet
         private          SlackClient?          _slackClient;
         private          SlackSocket?          _slackSocket;
         private          OAuthAccessResponse2? _oauth;
-        private readonly List< User >          _users      = new();
-        private readonly List< Channel >       _channels   = new();
-        private readonly List< UserGroup >?    _userGroups = new();
+        private readonly List< User >          _users       = new();
+        private readonly List< Channel >       _channels    = new();
+        private readonly List< UserGroup >?    _userGroups  = new();
+        private          SlackSurface?         _hometabView = null;
+        private          Type?                 _hometabType;
 
 
-        private readonly List< ApiEventHandler > _apiEventHandlers = new();
-        private readonly List< CommandHandler >  _commandHandlers  = new();
-        private readonly List< IParamParser >    _paramParsers     = new();
-        private readonly List< SlackSurface >    _surfaces         = new();
+        private readonly List< ApiEventHandler >            _apiEventHandlers    = new();
+        private readonly List< CommandHandler >             _commandHandlers     = new();
+        private readonly List< IParamParser >               _paramParsers        = new();
+        private readonly List< SlackSurface >               _surfaces            = new();
 
         static SlackApp()
         {
@@ -148,10 +151,13 @@ namespace SlackForDotNet
             OnMessage< HelloResponse >( OnHello );
             OnMessage< Goodbye >( ( _, msg ) => Reconnect() );
 
+            OnMessage< AppHomeOpened >( OnHomepageOpened );
+            OnMessage< GlobalShortcut >( OnGlobalShortcut );
+            OnMessage< MessageShortcut >( OnMessageShortcut );
+            OnMessage< SlashCommand >( OnSlashCommand );
             OnMessage< BlockActions >( OnBlockActions );
             OnMessage< BlockSuggestion>( OnBlockSuggestions );
             OnMessage< EventCallback >( OnEventCallback );
-            //OnMessage< Interactive >( OnInteractive );
             OnMessage< Disconnect >( OnDisconnect );
             OnMessage< Message >( OnAnyMessage );
 
@@ -164,7 +170,7 @@ namespace SlackForDotNet
                                    ShortConnections = true  // Useful for debugging websocket closures
                                #endif
                                };
-                _slackSocket.ApiEventReceived += RaiseApiEvent;
+                _slackSocket.ApiEventReceived += OnApiEventRecieved;
                 await _slackSocket.ConnectWebSocket(AppLevelToken!);
             }
 
@@ -190,13 +196,6 @@ namespace SlackForDotNet
                 RaiseApiEvent( msg.payload.@event, msg.payload );
         }
 
-        private void OnInteractive(ISlackApp app, Interactive msg)
-        {
-            if (msg.payload is BlockSuggestion suggestion)
-                OnBlockSuggestions( this, suggestion, msg );
-            else if (msg.payload != null)
-                RaiseApiEvent(msg.payload);
-        }
         private void OnBlockActions(ISlackApp slackApp, BlockActions msg)
         {
             var surface    = FindSurface( msg.view, msg.message );
@@ -208,6 +207,140 @@ namespace SlackForDotNet
             var surface = FindSurface(msg.view, msg.message); 
 
             surface?.Process(msg, envelope.envelope_id);
+        }
+
+        private async void OnHomepageOpened(ISlackApp slackApp, AppHomeOpened msg)
+        {
+            if (_hometabType == null) return;
+            if (_hometabView != null) return;
+
+            _hometabView = (SlackSurface?)Activator.CreateInstance(_hometabType, this);
+
+            if (_hometabView == null) return;
+
+            _surfaces.Add( _hometabView );
+            await PublishHomepage( _hometabView, msg );
+        }
+
+        private void OnGlobalShortcut(ISlackApp slackApp, GlobalShortcut shortcut, IEnvelope<SlackMessage> envelope)
+        {
+            var parser = FindParser(shortcut.callback_id, out List<string>? parameters);
+            if (parser == null) return;
+
+            try
+            {
+                var type = parser.CommandType;
+                var obj  = (SlackGlobalShortcutCommand?)Activator.CreateInstance(type);
+
+                if (obj == null)
+                    return;
+
+                obj.SlackApp = slackApp;
+                obj.Shortcut = shortcut;
+
+                var success = parser.ParseArguments(obj, args: parameters);
+
+                if (success)
+                    return;
+            }
+            catch (ArgumentException aex)
+            {
+                Logger.LogError(aex, "Processing Message");
+                Say(aex.ToString(), channel: shortcut.user.id);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "Processing Message");
+                Say(e.ToString(), channel: shortcut.user.id);
+            }
+
+            var help = parser.Help();
+            Say("```\n" + help + "\n```", channel: shortcut.user.id);
+        }
+
+        private void OnMessageShortcut(ISlackApp slackApp, MessageShortcut shortcut)
+        {
+            var parser = FindParser(shortcut.callback_id, out List<string>? parameters);
+            if (parser == null) return;
+
+            try
+            {
+                var type = parser.CommandType;
+                var obj  = (SlackMessageShortcutCommand?)Activator.CreateInstance(type);
+
+                if (obj == null)
+                    return;
+
+                obj.SlackApp = slackApp;
+                obj.Shortcut = shortcut;
+
+                var success = parser.ParseArguments(obj, args: parameters);
+
+                if (success)
+                    return;
+            }
+            catch (ArgumentException aex)
+            {
+                Logger.LogError(aex, "Processing Message");
+                Say(aex.ToString(), channel: shortcut.user.id);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "Processing Message");
+                Say(e.ToString(), channel: shortcut.user.id);
+            }
+
+            var help = parser.Help();
+            Say("```\n" + help + "\n```", channel: shortcut.user.id);
+
+        }
+
+        private void OnSlashCommand(ISlackApp slackApp, SlashCommand slashCommand, IEnvelope<SlackMessage> envelope)
+        {
+            if (string.IsNullOrWhiteSpace(slashCommand.text))
+                return;
+
+            if (string.Equals("help", slashCommand.text, StringComparison.OrdinalIgnoreCase) || slashCommand.text == "?")
+            {
+                Say("Available Commands\n\n```" + CommandHelp() + "```",
+                    slashCommand.channel_id ?? "",
+                    slashCommand.user_id);
+                return;
+            }
+
+            var parser = FindParser(slashCommand.command + " " + slashCommand.text, out List<string>? parameters);
+            if (parser == null) return;
+
+            try
+            {
+                var type = parser.CommandType;
+                var obj  = (SlackSlashCommand?)Activator.CreateInstance(type);
+
+                if (obj == null)
+                    return;
+
+                obj.SlackApp = slackApp;
+                obj.Message  = slashCommand;
+                obj.Envelope = envelope;
+
+                var success = parser.ParseArguments(obj, args: parameters);
+
+                if (success)
+                    return;
+            }
+            catch (ArgumentException aex)
+            {
+                Logger.LogError(aex, "Processing Message");
+                Say(aex.ToString(), slashCommand.channel_id, user: slashCommand.user_id );
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "Processing Message");
+                Say(e.ToString(), slashCommand.channel_id, user: slashCommand.user_id);
+            }
+
+            var help = parser.Help();
+            Say("```\n" + help + "\n```", slashCommand.channel_id, user: slashCommand.user_id);
         }
 
         async Task<bool> GetSomeAccessTokens()
@@ -270,7 +403,7 @@ namespace SlackForDotNet
         /// <summary>
         /// Call this when a Interactive Message or API event is raised in your SlackBot API
         /// </summary>
-        public void RaiseApiEvent( SlackMessage msg )
+        public void OnApiEventRecieved( SlackMessage msg )
         {
             if (string.IsNullOrWhiteSpace(msg.type)) 
                 return;
@@ -330,6 +463,8 @@ namespace SlackForDotNet
         public void OnMessage<T>([NotNull] Action<ISlackApp,T> action) where T : SlackMessage
         {
             var attr = MessageTypes.GetMessageAttributes<T>();
+            if (attr == null) return;
+
             _apiEventHandlers.Add( new ApiEventHandler(
                                          MessageType: attr.Type,
                                          MessageSubType: attr.SubType,
@@ -343,12 +478,15 @@ namespace SlackForDotNet
             where T : SlackMessage
         {
             var attr = MessageTypes.GetMessageAttributes<T>();
+            if (attr == null) return;
+
             _apiEventHandlers.Add(new ApiEventHandler(
                   MessageType: attr.Type,
                   MessageSubType: attr.SubType,
                   MessageContainerAction:(_, msg, envelope) => action(this, (T)msg, (IEnvelope<SlackMessage>)envelope)));
         }
 
+        /*
         /// <summary>
         ///     Register action to be called when a command is executed
         /// </summary>
@@ -361,6 +499,8 @@ namespace SlackForDotNet
                 command = "/" + command;
 
             var attr = MessageTypes.GetMessageAttributes<SlashCommand>();
+            if (attr == null) return;
+
             _apiEventHandlers.Add(new ApiEventHandler(
                   MessageType: attr.Type,
                   MessageSubType: attr.SubType,
@@ -373,6 +513,35 @@ namespace SlackForDotNet
 
         }
 
+        public void OnSlashCommand<TCommand>([NotNull] string command, Action<ISlackApp, TCommand, SlashCommandsEnvelope> action)
+            where TCommand : new()
+        {
+            if (string.IsNullOrEmpty(command)) throw new ArgumentException("Invalid command", nameof(command));
+            if (!command.StartsWith("/"))
+                command = "/" + command;
+
+            var attr = MessageTypes.GetMessageAttributes<SlashCommand>();
+            if (attr == null) return;
+
+            _apiEventHandlers.Add(new ApiEventHandler(
+                MessageType: attr.Type,
+                MessageSubType: attr.SubType,
+                MessageContainerAction: (_, msg, envelope) =>
+                {
+                    var slashCommand = (SlashCommand)msg;
+                    if (string.Equals( slashCommand.command, command, StringComparison.OrdinalIgnoreCase ))
+                    {
+                        var parser  = new ParamParser<TCommand>();
+                        var example = parser.ParseArguments(slashCommand.text, includeEnvironmentVariables: false);
+
+                        action( this, example, (SlashCommandsEnvelope)envelope );
+                    }
+                }));
+
+        }
+        */
+
+        /*
         /// <summary>
         ///     Register action to be called when a Global Shortcut is triggered
         /// </summary>
@@ -381,17 +550,20 @@ namespace SlackForDotNet
             if (string.IsNullOrEmpty(callbackId)) throw new ArgumentException("Invalid callback", nameof(callbackId));
 
             var attr = MessageTypes.GetMessageAttributes<GlobalShortcut>();
-            _apiEventHandlers.Add( new ApiEventHandler(
-                                                       MessageType: attr.Type,
-                                                       MessageSubType: attr.SubType,
-                                                       MessageContainerAction: ( _, msg, envelope ) =>
-                                                                               {
-                                                                                   var shortcut = (GlobalShortcut)msg;
-                                                                                   if (string.Equals( shortcut.callback_id, callbackId, StringComparison.OrdinalIgnoreCase ))
-                                                                                       action( this, shortcut );
-                                                                               } ) );
-        }
+            if (attr == null) return;
 
+            _apiEventHandlers.Add( new ApiEventHandler(
+               MessageType: attr.Type,
+               MessageSubType: attr.SubType,
+               MessageContainerAction: ( _, msg, envelope ) =>
+                   {
+                       var shortcut = (GlobalShortcut)msg;
+                       if (string.Equals( shortcut.callback_id, callbackId, StringComparison.OrdinalIgnoreCase ))
+                           action( this, shortcut );
+                   } ) );
+        }
+        */
+        /*
         /// <summary>
         ///     Register action to be called when a Global Shortcut is triggered
         /// </summary>
@@ -399,41 +571,63 @@ namespace SlackForDotNet
         {
             if (string.IsNullOrEmpty(callbackId)) throw new ArgumentException("Invalid callback", nameof(callbackId));
 
-            var attr = MessageTypes.GetMessageAttributes<GlobalShortcut>();
+            var attr = MessageTypes.GetMessageAttributes<MessageShortcut>();
+            if (attr == null) return;
+
             _apiEventHandlers.Add( new ApiEventHandler(
-                                                       MessageType: attr.Type,
-                                                       MessageSubType: attr.SubType,
-                                                       MessageContainerAction: ( _, msg, envelope ) =>
-                                                                               {
-                                                                                   var shortcut = (MessageShortcut)msg;
-                                                                                   if (string.Equals( shortcut.callback_id, callbackId, StringComparison.OrdinalIgnoreCase ))
-                                                                                       action( this, shortcut );
-                                                                               } ) );
+               MessageType: attr.Type,
+               MessageSubType: attr.SubType,
+               MessageContainerAction: ( _, msg, envelope ) =>
+                   {
+                       var shortcut = (MessageShortcut)msg;
+                       if (string.Equals( shortcut.callback_id, callbackId, StringComparison.OrdinalIgnoreCase ))
+                           action( this, shortcut );
+                   } ) );
         }
+        */
 
 
-        /// <summary>
-        /// Register a Command callback (e.g. /SlackDK with some text)
-        /// </summary>
-        public void OnCommand( string command, Action< ISlackApp, SlashCommand > action )
-        {
-            _commandHandlers.Add(new CommandHandler(command, action));
-        }
-        
         record CommandHandler( 
             string Command, 
             Action< ISlackApp, SlashCommand > CommandAction );
 
-        record ApiEventHandler( string?                     MessageType    = null,
-                                string?                     MessageSubType = null,
-                                Regex?                      Filter         = null,
-                                Action< ISlackApp, SlackMessage >? MessageAction  = null,
-                                Action<ISlackApp, SlackMessage, SlackMessage>? MessageContainerAction = null);
+        record ApiEventHandler( string?                                          MessageType            = null,
+                                string?                                          MessageSubType         = null,
+                                Regex?                                           Filter                 = null,
+                                Action< ISlackApp, SlackMessage >?               MessageAction          = null,
+                                Action< ISlackApp, SlackMessage, SlackMessage >? MessageContainerAction = null );
 
-        public void RegisterCommand< T >()
-            where T : BaseSlackCommand, new()
+        public void RegisterHometabSurface< T >()
+            where T : SlackSurface
+        {
+            if (_hometabView != null)
+                _surfaces.Remove( _hometabView );
+            _hometabView = null;
+            _hometabType = typeof(T);
+        }
+
+        public void RegisterMessageCommand< T >()
+            where T : SlackMessageCommand, new()
         {
             _paramParsers.Add( new ParamParser< T >() );
+        }
+
+        public void RegisterSlashCommand< T >( ) 
+            where T : SlackSlashCommand, new()
+        {
+            _paramParsers.Add( new ParamParser< T >() );
+        }
+
+        public void RegisterGlobalShortcutCommand<T>()
+            where T : SlackGlobalShortcutCommand, new()
+        {
+            _paramParsers.Add(new ParamParser<T>());
+        }
+
+        public void RegisterMessageShortcutCommand<T>()
+            where T : SlackMessageShortcutCommand, new()
+        {
+            _paramParsers.Add(new ParamParser<T>());
         }
 
         public void RegisterSurface( SlackSurface surface )
@@ -445,6 +639,8 @@ namespace SlackForDotNet
         {
             var sb  = new StringBuilder();
             var max = 0;
+
+            // Message Commands
             foreach (var paramParser in _paramParsers)
             {
                 var names = string.Join('|', paramParser.CommandNames);
@@ -491,7 +687,6 @@ namespace SlackForDotNet
                     hometab.ExternalId = result.view.external_id;
                     hometab.Hash       = result.view.hash;
                     hometab.RootViewId = result.view.root_view_id;
-                    //hometab.State      = result.view.state;
 
                     if (result.view.blocks != null)
                     {
@@ -505,33 +700,50 @@ namespace SlackForDotNet
                         }
                     }
 
+                    if (result.view?.state != null)
+                        hometab.UpdateState(result.view?.state?.values);
+
                     RegisterSurface( hometab );
                 }
             }
             return default;
         }
 
-        public async Task OpenSurface( DialogSurface surface, MessageBase msg )
+        public async Task OpenModal( ModalView view, string triggerId )
         {
-            RegisterSurface(surface);
+            if (string.IsNullOrEmpty( triggerId ))
+                throw new ArgumentException( "TriggerId must contain a value" );
+            if (view == null)
+                throw new ArgumentException("View must contain a value");
 
-            var response = Send< ViewOpen, ViewResponse >( new ViewOpen
+            var response = await Send< ViewOpen, ViewResponse >( new ViewOpen
                                                            {
-                                                               trigger_id = surface.TriggerId, 
-                                                               view = surface.View
+                                                               trigger_id = triggerId, 
+                                                               view = view
                                                            } );
+            if (response?.ok == true)
+            {
+                var surface = new SlackSurface( this ) { View = view };
+                if (response?.view.state != null)
+                    surface.UpdateState( response.view.state );
+
+                RegisterSurface( surface );
+            }
         }
 
-        public async Task OpenSurface( SlackSurface surface, MessageBase msg )
+        public async Task OpenSurface( SlackSurface surface, string channel, string? user = null, string? ts = null)
         {
-            RegisterSurface( surface );
+            var response = await Say( surface.Layouts, channel: channel, user: user, ts: ts );
 
-            var response = await Say( surface.Layouts, channel: msg.channel );
-
-            if (response is ChatPostMessageResponse chatResponse)
+            if (response?.ok == true)
             {
-                surface.ts      = chatResponse.ts;
-                surface.message = chatResponse.message;
+                if (response is ChatPostMessageResponse chatResponse)
+                {
+                    surface.ts      = chatResponse.ts;
+                    surface.message = chatResponse.message;
+
+                    RegisterSurface( surface );
+                }
             }
         }
 
@@ -580,7 +792,7 @@ namespace SlackForDotNet
             try
             {
                 var type = parser.CommandType;
-                var obj  = (BaseSlackCommand?)Activator.CreateInstance(type);
+                var obj  = (SlackMessageCommand?)Activator.CreateInstance(type);
 
                 if (obj == null)
                     return;
@@ -756,18 +968,20 @@ namespace SlackForDotNet
 
         private string GetAccessTokenFor< T >() where T : SlackMessage
         {
-            string token;
+            string? token = null;
             var    msgType = MessageTypes.GetMessageAttributes<T>();
-            if (msgType.ApiType.HasFlag(Msg.AppLevel) && !string.IsNullOrWhiteSpace(AppLevelToken))
-                token = AppLevelToken;
-            else if (msgType.ApiType.HasFlag(Msg.BotToken) && !string.IsNullOrWhiteSpace(BotAccessToken))
-                token = BotAccessToken;
-            else if (msgType.ApiType.HasFlag(Msg.UserToken) && !string.IsNullOrWhiteSpace(UserAccessToken))
-                token = UserAccessToken;
-            else
-                token = UserAccessToken ?? BotAccessToken ?? AppLevelToken ?? "";
 
-            return token;
+            if (msgType != null)
+            {
+
+                if (msgType.ApiType.HasFlag( Msg.AppLevel ) && !string.IsNullOrWhiteSpace( AppLevelToken ))
+                    token = AppLevelToken;
+                else if (msgType.ApiType.HasFlag( Msg.BotToken ) && !string.IsNullOrWhiteSpace( BotAccessToken ))
+                    token = BotAccessToken;
+                else if (msgType.ApiType.HasFlag( Msg.UserToken ) && !string.IsNullOrWhiteSpace( UserAccessToken ))
+                    token = UserAccessToken;
+            }
+            return token ?? UserAccessToken ?? BotAccessToken ?? AppLevelToken ?? "";
         }
 
         public Task<TResponse?> Send<TRequest, TResponse>(TRequest? request = default)
@@ -778,6 +992,9 @@ namespace SlackForDotNet
 
             var token   = GetAccessTokenFor< TRequest >();
             var msgType = MessageTypes.GetMessageAttributes<TRequest>();
+
+            if (msgType == null) return Task.FromResult((TResponse?)null);
+
             return msgType.ApiType.HasFlag( Msg.GetMethod )
                        ? Get< TRequest, TResponse >( token, request )
                        : Post<TRequest, TResponse>(token, request);

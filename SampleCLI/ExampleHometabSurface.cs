@@ -8,11 +8,11 @@ using SlackForDotNet.Surface;
 
 namespace SampleCLI
 {
-    public class HametabSurface : SlackSurface
+    public class ExampleHometabSurface : SlackSurface
     {
         private readonly SectionLayout _statusLayout;
 
-        public HametabSurface( [ NotNull ] ISlackApp slackApp ) : base( slackApp )
+        public ExampleHometabSurface( [ NotNull ] ISlackApp slackApp ) : base( slackApp )
         {
             Title = "SlackDK Title";
             Layouts = new List< Layout >
@@ -41,10 +41,10 @@ namespace SampleCLI
                               label    = "What are you doing today",
                               element = new TextInputElement( "what-doing" )
                                         {
-                                            TextUpdated = ( s, value ) =>
+                                            TextUpdated = ( s, _, a ) =>
                                                           {
                                                               _statusLayout.text =
-                                                                  new Markdown( $"Keep talking brah. I'm listening. `{value}`" );
+                                                                  new Markdown( $"Keep talking brah. I'm listening. `{a.value ?? ""}`" );
                                                               slackApp.Update( this );
                                                           },
                                             dispatch_action_config = DispatchAction.CharacterEntered
@@ -101,10 +101,10 @@ namespace SampleCLI
                                                             new Option( "Delete something", "over-delete" ),
                                                             new Option( "Update whatever",  "over-update" ),
                                                         },
-                                              Clicked = ( s, id ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"I told ya bro. I'm listening. `{id}`" );
+                                                                new Markdown( $"I told ya bro. I'm listening. `{a.selected_option}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -124,10 +124,10 @@ namespace SampleCLI
                                                             new Option( "Four",  "select-four" ),
                                                             new Option( "Five",  "select-five" ),
                                                         },
-                                              Clicked = ( s, id ) =>
+                                              Clicked = ( s, _ , a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"Fixed selection is the bomb. `{id}`" );
+                                                                new Markdown( $"Fixed selection is the bomb. `{a.selected_option}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -152,10 +152,10 @@ namespace SampleCLI
                                                                                   new( value + " Five", value  + "-select-five" ),
                                                                               }
                                                                 },
-                                              Clicked = ( s, id ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"Dynamic selection worked. Wow. `{id}`" );
+                                                                new Markdown( $"Dynamic selection worked. Wow. `{a.selected_option}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -167,10 +167,10 @@ namespace SampleCLI
                               accessory = new UsersSelectElement
                                           {
                                               action_id = "what-user-selection",
-                                              Clicked = ( s, id ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"User selection. `{id}`" );
+                                                                new Markdown( $"User selection. `{a.selected_user}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -182,10 +182,10 @@ namespace SampleCLI
                               accessory = new ConversationSelectElement
                                           {
                                               action_id = "what-conversation-selection",
-                                              Clicked = ( s, id ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"Conversation selection. `{id}`" );
+                                                                new Markdown( $"Conversation selection. `{a.selected_conversation}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -197,10 +197,10 @@ namespace SampleCLI
                               accessory = new ChannelSelectElement
                                           {
                                               action_id = "what-channel-selection",
-                                              Clicked = ( s, id ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"Channel selection. `{id}`" );
+                                                                new Markdown( $"Channel selection. `{a.selected_channel}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -220,10 +220,10 @@ namespace SampleCLI
                                                             new ( "Four",  "select-four" ),
                                                             new ( "Five",  "select-five" ),
                                                         },
-                                              Clicked = ( s, ids ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"Multi-selection is too much. `{string.Join( ',', ids )}`" );
+                                                                new Markdown( $"Multi-selection is too much. `{string.Join( ',', a.selected_options )}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -248,10 +248,10 @@ namespace SampleCLI
                                                                                   new( value + " Five", value  + "-select-five" ),
                                                                               }
                                                                 },
-                                              Clicked = ( s, ids ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"Dynamic multi-selection worked. Wow,wow,wow. `{string.Join( ',', ids )}`" );
+                                                                new Markdown( $"Dynamic multi-selection worked. Wow,wow,wow. `{string.Join( ',', a.selected_options )}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -263,10 +263,10 @@ namespace SampleCLI
                               accessory = new MultiUserSelectElement
                                           {
                                               action_id = "what-multi-user-selection",
-                                              Clicked = ( s, ids ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"Multi-selection users. `{string.Join( ',', ids )}`" );
+                                                                new Markdown( $"Multi-selection users. `{string.Join( ',', a.selected_users )}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -278,10 +278,10 @@ namespace SampleCLI
                               accessory = new MultiConversationSelectElement
                                           {
                                               action_id = "what-multi-conversation-selection",
-                                              Clicked = ( s, ids ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"Multi-selection conversations. `{string.Join( ',', ids )}`" );
+                                                                new Markdown( $"Multi-selection conversations. `{string.Join( ',', a.selected_conversations )}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }
@@ -293,10 +293,10 @@ namespace SampleCLI
                               accessory = new MultiChannelSelectElement
                                           {
                                               action_id = "what-multi-channel-selection",
-                                              Clicked = ( s, ids ) =>
+                                              Clicked = ( s, _, a ) =>
                                                         {
                                                             _statusLayout.text =
-                                                                new Markdown( $"Multi-selection channels. `{string.Join( ',', ids )}`" );
+                                                                new Markdown( $"Multi-selection channels. `{string.Join( ',', a.selected_channels )}`" );
                                                             slackApp.Update( this );
                                                         }
                                           }

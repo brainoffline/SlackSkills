@@ -72,7 +72,8 @@ namespace SlackForDotNet
         string CommandHelp();
 
         Task< ViewsPublishResponse? > PublishHomepage( SlackSurface hometab, AppHomeOpened msg );
-        Task                          OpenSurface( SlackSurface     surface, MessageBase msg );
+        Task                          OpenSurface( SlackSurface     surface, string        channel, string? user = null, string? ts = null );
+        Task                          OpenModal( ModalView          view,    string        triggerId );
         void                          Update( SlackSurface          surface );
 
         Task Reconnect();

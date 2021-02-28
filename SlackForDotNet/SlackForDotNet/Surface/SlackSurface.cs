@@ -16,17 +16,16 @@ using SlackForDotNet.WebApiContracts;
 
 namespace SlackForDotNet.Surface
 {
-    public abstract class SlackSurface
+    public class SlackSurface
     {
-        private                 string?                    _lastUpdated;
-        
         protected static readonly Dictionary< string, View > Views = new ();
         private static            int                        _ids  = 1;
-        protected readonly        ISlackApp                  App;
+        protected readonly        ISlackApp                  SlackApp;
         public                    string?                    ts;
         public                    MessageBase?               message;
 
         public string? TriggerId { get; private set; }
+        public View?   View      { get; set; }
 
         public    string?        ExternalId  { get; set; }
         public    int            UniqueId    { get; set; }
@@ -44,9 +43,9 @@ namespace SlackForDotNet.Surface
         public string? Hash       { get; set; }
         public string? RootViewId { get; set; }
 
-        protected SlackSurface( [NotNull] ISlackApp app )
+        public SlackSurface( [NotNull] ISlackApp app )
         {
-            App = app;
+            SlackApp = app;
             UniqueId = Interlocked.Increment( ref _ids );
             UniqueValue = $"_{UniqueId}_";
         }
@@ -57,8 +56,8 @@ namespace SlackForDotNet.Surface
 
             return this;
         }
-        
-        private void UpdateState(object? values)
+
+        public void UpdateState(object? values)
         {
             if (values == null) return;
 
@@ -80,25 +79,55 @@ namespace SlackForDotNet.Surface
                     var element = FindElement(type, blockId, actionId);
                     switch (element)
                     {
-                        case TextInputElement textInput:
-                            var tia = (TextInputElement)actionValue;
-                            textInput.value = tia.value ?? "";
+                        case TextInputElement e:
+                            e.value = ((TextInputElement)actionValue).value ?? "";
                             break;
-                        case CheckboxesElement checkboxes:
-                            var ce = (CheckboxesElement)actionValue;
-                            checkboxes.selected_options = ce.selected_options;
+                        case CheckboxesElement e:
+                            e.selected_options = ((CheckboxesElement)actionValue).selected_options;
                             break;
-                        case RadioButtonsElement radioButtons:
-                            var re = (RadioButtonsElement)actionValue;
-                            radioButtons.selected_option = re.selected_option;
+                        case RadioButtonsElement e:
+                            e.selected_option = ((RadioButtonsElement)actionValue).selected_option;
                             break;
-                        case DatePickerElement datePicker:
-                            var dpe = (DatePickerElement)actionValue;
-                            datePicker.selected_date = dpe.selected_date;
+                        case DatePickerElement e:
+                            e.selected_date = ((DatePickerElement)actionValue).selected_date;
                             break;
-                        case TimePickerElement timePicker:
-                            var tpe = (TimePickerElement)actionValue;
-                            timePicker.selected_time = tpe.selected_time;
+                        case TimePickerElement e:
+                            e.selected_time = ((TimePickerElement)actionValue).selected_time;
+                            break;
+                        case OverflowMenuElement e:
+                            e.selected_option = ((OverflowMenuElement)actionValue).selected_option;
+                            break;
+                        case SelectElement e:
+                            e.selected_option = ((SelectElement)actionValue).selected_option;
+                            break;
+                        case SelectExternalElement e:
+                            e.selected_option = ((SelectExternalElement)actionValue).selected_option;
+                            break;
+                        case UsersSelectElement e:
+                            e.selected_user = ( (UsersSelectElement)actionValue ).selected_user;
+                            break;
+                        case ConversationSelectElement e:
+                            e.selected_conversation = ((ConversationSelectElement)actionValue).selected_conversation;
+                            break;
+                        case ChannelSelectElement e:
+                            e.selected_channel = ((ChannelSelectElement)actionValue).selected_channel;
+                            break;
+                        case MultiSelectElement e:
+                            e.selected_options = ((MultiSelectElement)actionValue).selected_options;
+                            break;
+                        case MultiSelectExternalElement e:
+                            e.selected_options = ((MultiSelectExternalElement)actionValue).selected_options;
+                            break;
+                        case MultiUserSelectElement e:
+                            e.selected_users = ((MultiUserSelectElement)actionValue).selected_users;
+                            break;
+                        case MultiConversationSelectElement e:
+                            e.selected_conversations = ((MultiConversationSelectElement)actionValue).selected_conversations;
+                            break;
+                        case MultiChannelSelectElement e:
+                            e.selected_channels = ((MultiChannelSelectElement)actionValue).selected_channels;
+                            break;
+                        default:
                             break;
                     }
                 }
@@ -121,14 +150,14 @@ namespace SlackForDotNet.Surface
                 {
                     var options = select.Suggestions?.Invoke( blockSuggestion.value );
                     if (options != null)
-                        App.Push( new AcknowledgeResponse< Options > { envelope_id = envelopeId, payload = options } );
+                        SlackApp.Push( new AcknowledgeResponse< Options > { envelope_id = envelopeId, payload = options } );
                 }
                 break;
             case MultiSelectExternalElement multiSelect:
                 {
                     var options = multiSelect.Suggestions?.Invoke( blockSuggestion.value );
                     if (options != null)
-                        App.Push( new AcknowledgeResponse< Options > { envelope_id = envelopeId, payload = options } );
+                        SlackApp.Push( new AcknowledgeResponse< Options > { envelope_id = envelopeId, payload = options } );
                 }
                 break;
             }
@@ -154,7 +183,6 @@ namespace SlackForDotNet.Surface
                     var actionId = slackAction.action_id;
                     var actionTs = slackAction.action_ts;
                     
-                    // TODO: Trigger actions
                     var element = FindElement( type, blockId, actionId );
 
                     switch (element)
@@ -165,73 +193,73 @@ namespace SlackForDotNet.Surface
                         case TextInputElement textInput:
                             var tia = (TextInputAction)slackAction;
                             textInput.value = tia.value;
-                            textInput.RaiseTextUpdatedEvent( tia.value ?? "" );
+                            textInput.RaiseTextUpdatedEvent(this, tia);
                             break;
                         case OverflowMenuElement overflowMenu:
                             var oma = (OverflowMenuAction)slackAction;
                             overflowMenu.selected_option = oma.selected_option;
                             if (!string.IsNullOrEmpty(oma.selected_option?.value))
-                                overflowMenu.RaiseClicked(oma.selected_option.value);
+                                overflowMenu.RaiseClicked(this, oma);
                             break;
                         case SelectElement select:
                             var sa = (SelectAction)slackAction;
                             select.selected_option = sa.selected_option;
                             if (!string.IsNullOrEmpty(sa.selected_option?.value))
-                                select.RaiseClicked(sa.selected_option.value);
+                                select.RaiseClicked(this, sa);
                             break;
                         case SelectExternalElement selectExternal:
                             var sea = (SelectExternalAction)slackAction;
                             selectExternal.selected_option = sea.selected_option;
                             if (!string.IsNullOrEmpty(sea.selected_option?.value))
-                                selectExternal.RaiseClicked(sea.selected_option.value);
+                                selectExternal.RaiseClicked(this, sea);
                             break;
                         case UsersSelectElement userSelect:
                             var usa = (UserSelectAction)slackAction;
                             userSelect.selected_user = usa.selected_user;
                             if (!string.IsNullOrEmpty(usa.selected_user))
-                                userSelect.RaiseClicked(usa.selected_user);
+                                userSelect.RaiseClicked(this, usa);
                             break;
                         case ConversationSelectElement conversationSelect:
                             var csa = (ConversationSelectAction)slackAction;
                             conversationSelect.selected_conversation = csa.selected_conversation;
                             if (!string.IsNullOrEmpty(csa.selected_conversation))
-                                conversationSelect.RaiseClicked(csa.selected_conversation);
+                                conversationSelect.RaiseClicked(this, csa);
                             break;
                         case ChannelSelectElement channelSelect:
                             var chsa = (ChannelSelectAction)slackAction;
                             channelSelect.selected_channel = chsa.selected_channel;
                             if (!string.IsNullOrEmpty(chsa.selected_channel))
-                                channelSelect.RaiseClicked(chsa.selected_channel);
+                                channelSelect.RaiseClicked(this, chsa);
                             break;
                         case MultiSelectElement multiSelect:
                             var msa = (MultiSelectAction)slackAction;
                             multiSelect.selected_options = msa.selected_options;
                             if (msa.selected_options != null)
-                                multiSelect.RaiseClicked(msa.selected_options);
+                                multiSelect.RaiseClicked(this, msa);
                             break;
                         case MultiSelectExternalElement multiSelectExternal:
                             var msea = (MultiSelectExternalAction)slackAction;
                             multiSelectExternal.selected_options = msea.selected_options;
                             if (msea.selected_options != null)
-                                multiSelectExternal.RaiseClicked(msea.selected_options);
+                                multiSelectExternal.RaiseClicked(this, msea);
                             break;
                         case MultiUserSelectElement multiUserSelect:
                             var musa = (MultiUserSelectAction)slackAction;
                             multiUserSelect.selected_users = musa.selected_users;
                             if (musa.selected_users != null)
-                                multiUserSelect.RaiseClicked(musa.selected_users);
+                                multiUserSelect.RaiseClicked(this, musa);
                             break;
                         case MultiConversationSelectElement multiConversationSelect:
                             var mcsa = (MultiConversationSelectAction)slackAction;
                             multiConversationSelect.selected_conversations = mcsa.selected_conversations;
                             if (mcsa.selected_conversations != null)
-                                multiConversationSelect.RaiseClicked(mcsa.selected_conversations);
+                                multiConversationSelect.RaiseClicked(this, mcsa);
                             break;
                         case MultiChannelSelectElement multiChannelSelect:
                             var mchsa = (MultiChannelSelectAction)slackAction;
                             multiChannelSelect.selected_channels = mchsa.selected_channels;
                             if (mchsa.selected_channels != null)
-                                multiChannelSelect.RaiseClicked(mchsa.selected_channels);
+                                multiChannelSelect.RaiseClicked(this, mchsa);
                             break;
                     }
                 }
@@ -248,7 +276,7 @@ namespace SlackForDotNet.Surface
                 {
                     var element = ctx.elements.FirstOrDefault( e => e.action_id == actionId );
 
-                    if (element != null)
+                    if (element != default)
                         return element;
 
                     break;
@@ -258,7 +286,7 @@ namespace SlackForDotNet.Surface
                     var element = ( section.accessory != null && section.accessory.action_id == actionId )
                                       ? section.accessory
                                       : default;
-                    if (element != null)
+                    if (element != default)
                         return element;
 
                     break;
@@ -269,7 +297,7 @@ namespace SlackForDotNet.Surface
                                       ? input.element
                                       : default;
 
-                    if (element != null)
+                    if (element != default)
                         return element;
 
                     break;
@@ -278,7 +306,7 @@ namespace SlackForDotNet.Surface
                 {
                     var element = action.elements.FirstOrDefault(e => e.action_id == actionId);
 
-                    if (element != null)
+                    if (element != default)
                         return element;
 
                     break;
@@ -312,38 +340,13 @@ namespace SlackForDotNet.Surface
             }
 
             var logMsg = sb.ToString();
-            App.Logger?.LogError(logMsg);
+            SlackApp.Logger?.LogError(logMsg);
             RaiseError(logMsg);
         }
 
         protected void RaiseError(string msg)
         {
             // TODO: Allow program to whatever
-        }
-    }
-
-    public class InlineMessageSurface : SlackSurface
-    {
-        public InlineMessageSurface( 
-            [ NotNull ] ISlackApp app,
-            string title
-            ) : base( app )
-        {
-            Title   = title;
-        }
-    }
-
-    public class DialogSurface : SlackSurface
-    {
-        public ModalView View { get; }
-
-        public DialogSurface(
-            [NotNull] ISlackApp app,
-            ModalView view
-            ) : base(app)
-        {
-            Title = view.title;
-            View  = view;
         }
     }
 }

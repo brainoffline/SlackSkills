@@ -5,7 +5,7 @@ using Asciis;
 
 namespace SlackForDotNet
 {
-    public abstract class BaseSlackCommand
+    public abstract class SlackMessageCommand
     {
         public          ISlackApp? SlackApp { get; set; }
         public          Message?   Message  { get; set; }
@@ -18,4 +18,5 @@ namespace SlackForDotNet
             OnCommand(extras);
         }
     }
+
 }

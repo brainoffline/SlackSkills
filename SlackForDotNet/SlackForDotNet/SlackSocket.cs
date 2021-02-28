@@ -215,6 +215,8 @@ namespace SlackForDotNet
                 message.id = Interlocked.Increment(ref _currentId);
 
             var messageType = MessageTypes.GetMessageAttributes< TRequest >();
+            if (messageType == null) return;
+
             message.type    ??= messageType.Type;
             message.subtype ??= messageType.SubType;
 

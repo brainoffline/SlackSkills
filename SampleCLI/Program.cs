@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using SlackForDotNet;
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using static SlackForDotNet.SlackConstants;
@@ -12,7 +11,7 @@ using static SlackForDotNet.SlackConstants;
 
 namespace SampleCLI
 {
-    public partial class Program
+    public class Program
     {
         #pragma warning disable 8618
         private SlackApp    _app;
@@ -24,11 +23,7 @@ namespace SampleCLI
             var program = new Program();
 
             program.SetupSlackApp( args );
-
-            if (program._config?.UseSurface != true)
-                program.SetupRaw();
-            else
-                program.SetupSurface();
+            program.SetupSurface();
 
             await program.Run();
         }
@@ -109,6 +104,24 @@ namespace SampleCLI
             Console.WriteLine( "Slack CLI Stopped" );
         }
 
+        public void SetupSurface()
+        {
+            _app.OnMessage<AppMention>(OnAppMention);
+
+            _app.RegisterHometabSurface<ExampleHometabSurface>();
+            _app.RegisterGlobalShortcutCommand<ExampleGlobalShortcutCommand>();
+            _app.RegisterMessageShortcutCommand<ExampleMessageShortcutCommand>();
+            _app.RegisterSlashCommand<ExampleSlashCommand>();
+            _app.RegisterMessageCommand<ExampleMessageCommand>();
+            _app.RegisterMessageCommand<BlahMessageCommand>();
+            _app.RegisterMessageCommand<YapMessageCommand>();
+        }
+
+        async void OnAppMention(ISlackApp slackApp, AppMention msg)
+        {
+            await slackApp.SayToUser("Thanks for the mention brah", null, msg.channel, msg.user);
+        }
+
         // Open up you https://api.slack.com/apps/  Event subscriptions. Update to include ONLY the scopes you need
         private static readonly string DefaultBotScope = BuildScope(
                                                                     BotScopes.AppMentions_Read,
@@ -149,35 +162,6 @@ namespace SampleCLI
 
     }
 
-
-    internal class SlashCommandExample
-    {
-        [ Param( "c|Comment", "A comment to display" ) ]
-        public string? Comment { get; set; }
-    }
-
-
-    [ Command( "ExampleCommand", Description = "Example of using Slack as a command line interpreter" ) ]
-    internal class ExampleCommand : BaseSlackCommand
-    {
-        [ Param( "n|Name", "Name" ) ]
-        public string? Name { get; set; }
-
-        public override void OnCommand( List< string > extras )
-        {
-            if (extras.Count > 0)
-                Name = extras[ 0 ];
-            SlackApp?.SayToChannel( string.IsNullOrWhiteSpace( Name )
-                                        ? "Example Hello"
-                                        : $"Example Hello to {Name}. :wave:",
-                                   null,
-                                   channel: Message?.channel ?? "" );
-
-            Console.WriteLine( "Example Command Executed" );
-        }
-    }
-
-
     [ Command( "SampleCLI", Description = "Sample Slack CLI using SlackForDotNet" ) ]
     class CommandLine
     {
@@ -204,8 +188,5 @@ namespace SampleCLI
 
         [ Param( "r|Redirect|RedirectUrl", "Url used to host browser calls during login (OAuth 2.0 security)" ) ]
         public string? RedirectUrl { get; set; }
-        
-        [Param( "surface", "Use simpler Surface interface")]
-        public bool UseSurface { get; set; }
     }
 }

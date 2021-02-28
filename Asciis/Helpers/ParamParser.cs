@@ -83,10 +83,8 @@ namespace Asciis
             }
             else
             {
-                CommandNames = new List< string > { CommandType.Name };
-                CommandDescription = CommandType.GetCustomAttribute< DescriptionAttribute >()
-                                               ?.Description
-                                  ?? "";
+                CommandNames       = new List< string > { CommandType.Name };
+                CommandDescription = CommandType.GetCustomAttribute< DescriptionAttribute >()?.Description ?? "";
             }
 
             var properties = CommandType.GetProperties();
