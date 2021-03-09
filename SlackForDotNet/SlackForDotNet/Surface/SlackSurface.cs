@@ -21,6 +21,8 @@ namespace SlackForDotNet.Surface
         protected static readonly Dictionary< string, View > Views = new ();
         private static            int                        _ids  = 1;
         protected readonly        ISlackApp                  SlackApp;
+        public                    string?                    channelId;
+        public                    string?                    userId;
         public                    string?                    ts;
         public                    MessageBase?               message;
 
@@ -33,6 +35,7 @@ namespace SlackForDotNet.Surface
         public    PlainText      Title       { get; set; } = "";
 
         public Action< ViewSubmission >? Submitted = null;
+        public Action< ViewClosed >?     Closed    = null;
 
         public SlackSurface( [NotNull] ISlackApp app )
         {
@@ -48,7 +51,38 @@ namespace SlackForDotNet.Surface
             return this;
         }
 
-        public void UpdateState(object? values)
+        public void UpdateStateFrom( View view )
+        {
+            if (View == null)
+                View = view;
+            else
+            {
+                View.id           = view.id;
+                View.app_id       = view.app_id;
+                View.bot_id       = view.bot_id;
+                View.team_id      = view.team_id;
+                View.callback_id  = view.callback_id;
+                View.external_id  = view.external_id;
+                View.hash         = view.hash;
+                View.root_view_id = view.root_view_id;
+            }
+
+            if (view.blocks != null && view.blocks.Count == Layouts.Count)
+            {
+                // Update block_id's
+                for (int i = 0; i < view.blocks.Count; i++)
+                {
+                    var slackView = view.blocks[i];
+                    var layout    = Layouts[i];
+                    if (string.IsNullOrEmpty(layout.block_id))
+                        layout.block_id = slackView.block_id;
+                }
+            }
+
+            UpdateState( view.state?.values );
+        }
+
+        private  void UpdateState(object? values)
         {
             if (values == null) return;
 
@@ -135,6 +169,15 @@ namespace SlackForDotNet.Surface
 
             var result = new ViewSubmissionResult();
             SlackApp.Push( new AcknowledgeResponse<ViewSubmissionResult>{ envelope_id = envelopeId, payload = result } );
+        }
+
+        public void Process( ViewClosed viewClosed )
+        {
+            TriggerId = null;
+
+            UpdateState(viewClosed.view?.state?.values);
+
+            Closed?.Invoke(viewClosed);
         }
 
         public void Process( BlockSuggestion blockSuggestion, string envelopeId )
@@ -297,7 +340,7 @@ namespace SlackForDotNet.Surface
 
                     break;
                 }
-                case ActionLayout action:
+                case ActionsLayout action:
                 {
                     var element = action.elements.FirstOrDefault(e => e.action_id == actionId);
 

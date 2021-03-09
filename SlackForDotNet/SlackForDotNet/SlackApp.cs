@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using SlackForDotNet.Surface;
 using Newtonsoft.Json;
 
+using SlackForDotNet.Context;
 using SlackForDotNet.WebApiContracts;
 
 namespace SlackForDotNet
@@ -46,19 +47,16 @@ namespace SlackForDotNet
         
         public ILogger<SlackApp>? Logger { get; set; }
         public string             AppId  { get; set; } = "";
-        public string             TeamId { get; set; } = "";
 
-        private          bool                  _socketModeAvailable;
-        private          bool                  _getBotAccessToken;
-        private          bool                  _getUserAccessToken;
-        private          SlackClient?          _slackClient;
-        private          SlackSocket?          _slackSocket;
-        private          OAuthAccessResponse2? _oauth;
-        private readonly List< User >          _users       = new();
-        private readonly List< Channel >       _channels    = new();
-        private readonly List< UserGroup >?    _userGroups  = new();
-        private          SlackSurface?         _hometabView = null;
-        private          Type?                 _hometabType;
+        private bool                  _socketModeAvailable;
+        private bool                  _getBotAccessToken;
+        private bool                  _getUserAccessToken;
+        private SlackClient?          _slackClient;
+        private SlackSocket?          _slackSocket;
+        private ContextManager?       _contextManager;
+        private OAuthAccessResponse2? _oauth;
+        private SlackSurface?         _hometabView = null;
+        private Type?                 _hometabType;
 
 
         private readonly List< ApiEventHandler >            _apiEventHandlers    = new();
@@ -159,6 +157,7 @@ namespace SlackForDotNet
             OnMessage< BlockActions >( OnBlockActions );
             OnMessage< BlockSuggestion>( OnBlockSuggestions );
             OnMessage< ViewSubmission>( OnViewSubmission );
+            OnMessage< ViewClosed >( OnViewClosed );
             OnMessage< EventCallback >( OnEventCallback );
             OnMessage< Disconnect >( OnDisconnect );
             OnMessage< Message >( OnAnyMessage );
@@ -189,18 +188,13 @@ namespace SlackForDotNet
 
         private void OnEventCallback( ISlackApp app, EventCallback msg )
         {
-            if (msg.payload == null) return;
-            
-            AppId  = msg.payload.api_app_id;
-            TeamId = msg.payload.team_id;
-            
-            if (msg.payload.@event != null)
+            if (msg.payload?.@event != null)
                 RaiseApiEvent( msg.payload.@event, msg.payload );
         }
 
         private void OnBlockActions(ISlackApp slackApp, BlockActions msg)
         {
-            var surface    = FindSurface( msg.view, msg.message );
+            var surface    = FindSurface( msg.view, msg.message, msg.container );
 
             surface?.Process(msg);
         }
@@ -216,6 +210,18 @@ namespace SlackForDotNet
             var surface = FindSurface(msg.view, null);
 
             surface?.Process(msg, envelope.envelope_id);
+        }
+
+        private void OnViewClosed(ISlackApp slackApp, ViewClosed msg)
+        {
+            var surface = FindSurface(msg.view, null);
+
+            if (surface != null)
+            {
+                _surfaces.Remove(surface);
+                surface.Process( msg );
+            }
+
         }
 
         private async void OnHomepageOpened(ISlackApp slackApp, AppHomeOpened msg)
@@ -678,7 +684,7 @@ namespace SlackForDotNet
                                      {
                                          external_id = key,
                                          callback_id = key,
-                                         blocks          = hometab.Layouts
+                                         blocks      = hometab.Layouts
                                      }
                           };
                 hometab.View ??= pub.view;
@@ -686,29 +692,7 @@ namespace SlackForDotNet
                 var response = await Send<ViewsPublish, ViewsPublishResponse>(pub);
                 if (response?.ok == true)
                 {
-                    hometab.View!.id          =   response.view.id;
-                    hometab.View.app_id       =   response.view.app_id;
-                    hometab.View.bot_id       =   response.view.bot_id;
-                    hometab.View.team_id      =   response.view.team_id;
-                    hometab.View.callback_id  =   response.view.callback_id;
-                    hometab.View.external_id  =   response.view.external_id;
-                    hometab.View.hash         =   response.view.hash;
-                    hometab.View.root_view_id =   response.view.root_view_id;
-
-                    if (response.view.blocks != null)
-                    {
-                        // Update block_id's
-                        for (int i = 0; i < response.view.blocks.Count; i++)
-                        {
-                            var slackView = response.view.blocks[ i ];
-                            var layout    = hometab.Layouts[ i ];
-                            if (string.IsNullOrEmpty( layout.block_id ))
-                                layout.block_id = slackView.block_id;
-                        }
-                    }
-
-                    if (response.view?.state != null)
-                        hometab.UpdateState(response.view?.state?.values);
+                    hometab.UpdateStateFrom( response.view );
 
                     RegisterSurface( hometab );
                 }
@@ -743,32 +727,24 @@ namespace SlackForDotNet
                                                                  } );
             if (response?.ok == true)
             {
-                surface.View.id           = response.view.id;
-                surface.View.app_id       = response.view.app_id;
-                surface.View.bot_id       = response.view.bot_id;
-                surface.View.team_id      = response.view.team_id;
-                surface.View.callback_id  = response.view.callback_id;
-                surface.View.external_id  = response.view.external_id;
-                surface.View.hash         = response.view.hash;
-                surface.View.root_view_id = response.view.root_view_id;
-                
-                if (response?.view.state?.values != null)
-                    surface.UpdateState( response.view.state.values );
+                surface.UpdateStateFrom( response.view );
 
                 RegisterSurface( surface );
             }
         }
 
-        public async Task OpenSurface( SlackSurface surface, string channel, string? user = null, string? ts = null)
+        public async Task OpenSurface( SlackSurface surface, string channelId, string? userId = null, string? ts = null)
         {
-            var response = await Say( surface.Layouts, channel: channel, user: user, ts: ts );
+            var response = await Say( surface.Layouts, channel: channelId, user: userId, ts: ts );
 
             if (response?.ok == true)
             {
                 if (response is ChatPostMessageResponse chatResponse)
                 {
-                    surface.ts      = chatResponse.ts;
-                    surface.message = chatResponse.message;
+                    surface.ts         = chatResponse.ts ?? chatResponse.message_ts;
+                    surface.channelId = channelId;
+                    surface.userId    = userId;
+                    surface.message    = chatResponse.message;
 
                     RegisterSurface( surface );
                 }
@@ -791,11 +767,31 @@ namespace SlackForDotNet
             var response = await Send<ViewUpdate, ViewResponse>(pub);
             if (response?.ok == true)
             {
-                surface.View.hash = response.view.hash;
-                surface.View.id   = response.view.id;
+                surface.UpdateStateFrom( response.view );
             }
         }
 
+        public async Task RemoveSurface( SlackSurface surface )
+        {
+            await Send< ChatDelete, MessageResponse >( 
+                new ChatDelete { channel = surface.channelId!, ts = surface.ts!, as_user = true } );
+
+            if (_surfaces.Contains( surface ))
+                _surfaces.Remove( surface );
+        }
+
+        public ContextManager ContextManager =>
+            _contextManager ??= new ContextManager( this );
+
+        public Task< UserContext? > GetUserContext( string? userId ) =>
+            ContextManager.GetUserContext( userId );
+
+        public Task< ChannelContext? > GetChannelContext( string? channelId ) =>
+            ContextManager.GetChannelContext( channelId );
+
+        public Task< BotContext? > GetBotContext( string? botId, string? teamId = null ) =>
+            ContextManager.GetBotContext( botId, teamId );
+            
         private void OnAnyMessage(ISlackApp app, Message msg)
         {
             if (msg.bot_profile != null)
@@ -848,12 +844,14 @@ namespace SlackForDotNet
             Say("```\n" + help + "\n```", msg.channel, msg.user);
         }
 
-        SlackSurface? FindSurface(View? view, MessageBase? message)
+        SlackSurface? FindSurface( View? view, MessageBase? message, Container? msgContainer = null )
         {
             if (view != null)
                 return _surfaces.FirstOrDefault(s => s.View?.callback_id == view.callback_id);
-            else if (message != null)
+            if (message != null)
                 return _surfaces.FirstOrDefault(s => s.ts == message.ts);
+            if (msgContainer != null)
+                return _surfaces.FirstOrDefault(s => s.ts == msgContainer.message_ts);
             return default;
         }
 
@@ -994,6 +992,17 @@ namespace SlackForDotNet
             return response;
         }
 
+        public async Task<MessageResponse?> AddReaction(Message msg, string reaction)
+        {
+            return await Send<ReactionAdd, MessageResponse>(
+                new ReactionAdd { channel = msg.channel, name = reaction, timestamp = msg.ts });
+        }
+        public async Task<MessageResponse?> RemoveReaction(Message msg, string reaction)
+        {
+            return await Send<ReactionRemove, MessageResponse>(
+                new ReactionRemove { channel = msg.channel, name = reaction, timestamp = msg.ts });
+        }
+
         private string GetAccessTokenFor< T >() where T : SlackMessage
         {
             string? token = null;
@@ -1066,18 +1075,6 @@ namespace SlackForDotNet
 
             return response;
         }
-
-        /// <summary>
-        /// Return Cached information about a user
-        /// </summary>
-        public User? GetUser( string id ) =>
-            _users.FirstOrDefault(u => u.id == id);
-
-        /// <summary>
-        /// Return cached information about a channel
-        /// </summary>
-        public Channel? GetChannel( string id ) =>
-            _channels.FirstOrDefault(c => c.id == id);
 
         /// <summary>
         /// Called when socket is quiet for too long.  Need to reconnect

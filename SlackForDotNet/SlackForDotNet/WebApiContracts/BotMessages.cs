@@ -20,6 +20,6 @@ namespace SlackForDotNet.WebApiContracts
 
     public class BotInfoResponse : MessageResponse
     {
-        public Bot? bot { get; set; }
+        public Bot bot { get; set; }
     }
 }

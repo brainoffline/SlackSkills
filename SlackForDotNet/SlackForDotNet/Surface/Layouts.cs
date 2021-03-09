@@ -17,7 +17,11 @@ namespace SlackForDotNet.Surface
         public string  type     { get; }
         public string? block_id { get; set; }
 
-        protected Layout( string type ) { this.type = type; }
+        protected Layout( string type, string? blockId = null ) 
+        { 
+            this.type = type;
+            block_id = blockId;
+        }
     }
 
     /// <summary>
@@ -32,7 +36,7 @@ namespace SlackForDotNet.Surface
         public PlainText text { get; set; }
 
         public HeaderLayout() : base("header") { }
-        public HeaderLayout( [ NotNull ] PlainText text ) : base( "header" )
+        public HeaderLayout( PlainText text ) : base( "header" )
         {
             this.text = text;
         }
@@ -48,8 +52,9 @@ namespace SlackForDotNet.Surface
     public class ContextLayout : Layout
     {
         public List< Element > elements { get; set; } = new ();
-        
-        public ContextLayout() : base( "context" ) { }
+
+        public ContextLayout() : base("context") { }
+        public ContextLayout(string blockId) : base("context", blockId) { }
 
         public ContextLayout Add( Element element )
         {
@@ -73,7 +78,7 @@ namespace SlackForDotNet.Surface
         public PlainText? title     { get; set; }
 
         public ImageLayout() : base("image") { }
-        public ImageLayout( string imageUrl, string altText ) : base( "image" )
+        public ImageLayout( string blockId, string imageUrl, string altText ) : base( "image", blockId )
         {
             image_url     = imageUrl;
             alt_text = altText;
@@ -104,8 +109,9 @@ namespace SlackForDotNet.Surface
         public Text?       text      { get; set; }
         public List<Text>? fields    { get; set; }
         public Element?    accessory { get; set; }
-        
-        public SectionLayout( ) : base( "section" ) { }
+
+        public SectionLayout() : base("section") { }
+        public SectionLayout(string blockId) : base("section", blockId) { }
 
         public SectionLayout Add( Text field )
         {
@@ -132,7 +138,7 @@ namespace SlackForDotNet.Surface
         public bool?      optional        { get; set; }
 
         public InputLayout() : base("input") { }
-        public InputLayout( PlainText label, Element element ) : base( "input" )
+        public InputLayout( string blockId, PlainText label, Element element ) : base( "input", blockId )
         {
             this.label    = label;
             this.element  = element;
@@ -146,19 +152,20 @@ namespace SlackForDotNet.Surface
     ///     Available in
     ///         Modal, Messages, Home tabs
     /// </remarks>
-    public class ActionLayout : Layout
+    public class ActionsLayout : Layout
     {
         public string          action_id { get; set; }
         public PlainText       label     { get; set; }
         public List< Element > elements  { get; set; } = new();
 
-        public ActionLayout() : base("action") { }
-        public ActionLayout(PlainText label) : base("action")
+        public ActionsLayout() : base("actions") { }
+        public ActionsLayout(string blockId, PlainText? label = null) : base("actions", blockId)
         {
-            this.label   = label;
+            if (label != null)
+                this.label = label;
         }
 
-        public ActionLayout Add( Element element )
+        public ActionsLayout Add( Element element )
         {
             elements.Add( element );
 
@@ -178,7 +185,7 @@ namespace SlackForDotNet.Surface
         public string external_id { get; set; }
         public string source      { get; } = "remote";
         
-        public FileLayout( string externalId) : base( "file" )
+        public FileLayout( string blockId, string externalId) : base( "file", blockId )
         {
             external_id = externalId;
         }
@@ -229,7 +236,7 @@ namespace SlackForDotNet.Surface
                 existingValue = new InputLayout();
                 break;
             case "action":
-                existingValue = new ActionLayout();
+                existingValue = new ActionsLayout();
                 break;
 
                 default:

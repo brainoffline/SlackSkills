@@ -6,6 +6,7 @@ using JetBrains.Annotations;
 
 using Microsoft.Extensions.Logging;
 
+using SlackForDotNet.Context;
 using SlackForDotNet.Surface;
 using SlackForDotNet.WebApiContracts;
 
@@ -15,7 +16,6 @@ namespace SlackForDotNet
     {
         ILogger<SlackApp>? Logger { get; }
         string             AppId  { get; }
-        string             TeamId { get; }
 
         /// <summary>
         /// Send text to a channel.
@@ -53,21 +53,17 @@ namespace SlackForDotNet
                                             string       user,
                                             string?      threadTs = null);
 
+        Task<MessageResponse?> AddReaction(Message msg, string reaction);
+        Task<MessageResponse?> RemoveReaction(Message msg, string reaction);
+
         Task< TResponse? > Send< TRequest, TResponse >( TRequest request ) 
             where TRequest : SlackMessage
             where TResponse : MessageResponse;
 
+        /// <summary>
+        ///     Push a response up the WebSocket connection
+        /// </summary>
         void Push< TRequest >( TRequest request );
-
-        /// <summary>
-        /// Return Cached information about a user
-        /// </summary>
-        User? GetUser( string id );
-
-        /// <summary>
-        /// Return cached information about a channel
-        /// </summary>
-        Channel? GetChannel( string id );
 
         string CommandHelp();
 
@@ -75,6 +71,12 @@ namespace SlackForDotNet
         Task                          OpenSurface( SlackSurface     surface, string        channel, string? user = null, string? ts = null );
         Task                          OpenModal( SlackSurface       surface, string        triggerId );
         void                          Update( SlackSurface          surface );
+        Task                          RemoveSurface( SlackSurface   surface );
+
+
+        Task<UserContext?>    GetUserContext( string?   userId );
+        Task<ChannelContext?> GetChannelContext(string? channelId);
+        Task<BotContext?> GetBotContext(string? botId, string? teamId = null);
 
         Task Reconnect();
     }

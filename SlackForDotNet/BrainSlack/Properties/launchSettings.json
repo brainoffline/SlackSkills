@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "BrainSlack": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ClientSecret": "d5a7019a054891d5f99b60fc5989f46c",
+        "BotAccessToken": "xoxb-2413922186-1805012405090-ZJdFbDvnNN2ULZGxZTPWVMOE",
+        "ClientId": "2413922186.1804786841874",
+        "AppLevelToken": "xapp-1-A01PNP4QRRQ-1817423069041-f35e19a62fe627e65fcdf912988b1b4c4b554915087b09a8d26e7c88295a0655"
+      }
+    }
+  }
+}

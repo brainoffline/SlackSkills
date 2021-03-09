@@ -118,6 +118,9 @@ namespace SampleCLI
             _app.RegisterMessageCommand<YapMessageCommand>();
         }
 
+        /// <summary>
+        ///     Examples of different ways to send a message
+        /// </summary>
         async void OnAppMention(ISlackApp slackApp, AppMention msg)
         {
             // Visible to everyone in the channel

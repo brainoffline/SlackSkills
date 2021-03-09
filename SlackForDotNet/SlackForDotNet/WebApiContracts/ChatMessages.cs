@@ -176,9 +176,10 @@ namespace SlackForDotNet.WebApiContracts
 
     public class ChatPostMessageResponse : MessageResponse
     {
-        public string      channel { get; set; }
-        public string      ts      { get; set; }
-        public MessageBase message { get; set; }
+        public string       channel    { get; set; }
+        public string?      ts         { get; set; }
+        public string?      message_ts { get; set; }
+        public MessageBase? message    { get; set; }
     }
 
     [ SlackMessage( "chat.scheduleMessage",

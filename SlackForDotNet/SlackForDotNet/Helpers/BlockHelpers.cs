@@ -37,7 +37,7 @@ namespace SlackForDotNet
             case InputLayout input:     
                 ExtractText(sb,  input.element);
                 break;
-            case ActionLayout action:
+            case ActionsLayout action:
                 {
                     foreach (var element in action.elements)
                         ExtractText(sb, element);
