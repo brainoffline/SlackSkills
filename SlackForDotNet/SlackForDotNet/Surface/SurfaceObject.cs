@@ -50,6 +50,8 @@ namespace SlackForDotNet.Surface
         public static implicit operator PlainText(string text) =>
             new (text);
 
+        public override string ToString() =>
+            text;
     }
     public class Markdown : Text
     {

@@ -234,7 +234,7 @@ namespace SlackForDotNet
             if (_hometabView == null) return;
 
             _surfaces.Add( _hometabView );
-            await PublishHomepage( _hometabView, msg );
+            await OpenHomepageSurface( _hometabView, msg );
         }
 
         private void OnGlobalShortcut(ISlackApp slackApp, GlobalShortcut shortcut, IEnvelope<SlackMessage> envelope)
@@ -498,107 +498,6 @@ namespace SlackForDotNet
                   MessageContainerAction:(_, msg, envelope) => action(this, (T)msg, (IEnvelope<SlackMessage>)envelope)));
         }
 
-        /*
-        /// <summary>
-        ///     Register action to be called when a command is executed
-        /// </summary>
-        /// <param name="command">The name of the command. e.g. /blah </param>
-        /// <param name="action"></param>
-        public void OnSlashCommand( [NotNull] string command, Action< ISlackApp, SlashCommand, SlashCommandsEnvelope > action )
-        {
-            if (string.IsNullOrEmpty( command )) throw new ArgumentException( "Invalid command", nameof(command) );
-            if (!command.StartsWith( "/" ))
-                command = "/" + command;
-
-            var attr = MessageTypes.GetMessageAttributes<SlashCommand>();
-            if (attr == null) return;
-
-            _apiEventHandlers.Add(new ApiEventHandler(
-                  MessageType: attr.Type,
-                  MessageSubType: attr.SubType,
-                  MessageContainerAction: (_, msg, envelope) =>
-                                          {
-                                              var slashCommand = (SlashCommand)msg;
-                                              if (string.Equals( slashCommand.command, command, StringComparison.OrdinalIgnoreCase ))
-                                                  action( this, (SlashCommand)msg, (SlashCommandsEnvelope)envelope );
-                                          } ));
-
-        }
-
-        public void OnSlashCommand<TCommand>([NotNull] string command, Action<ISlackApp, TCommand, SlashCommandsEnvelope> action)
-            where TCommand : new()
-        {
-            if (string.IsNullOrEmpty(command)) throw new ArgumentException("Invalid command", nameof(command));
-            if (!command.StartsWith("/"))
-                command = "/" + command;
-
-            var attr = MessageTypes.GetMessageAttributes<SlashCommand>();
-            if (attr == null) return;
-
-            _apiEventHandlers.Add(new ApiEventHandler(
-                MessageType: attr.Type,
-                MessageSubType: attr.SubType,
-                MessageContainerAction: (_, msg, envelope) =>
-                {
-                    var slashCommand = (SlashCommand)msg;
-                    if (string.Equals( slashCommand.command, command, StringComparison.OrdinalIgnoreCase ))
-                    {
-                        var parser  = new ParamParser<TCommand>();
-                        var example = parser.ParseArguments(slashCommand.text, includeEnvironmentVariables: false);
-
-                        action( this, example, (SlashCommandsEnvelope)envelope );
-                    }
-                }));
-
-        }
-        */
-
-        /*
-        /// <summary>
-        ///     Register action to be called when a Global Shortcut is triggered
-        /// </summary>
-        public void OnGlobalShortcut( string callbackId, Action< ISlackApp, GlobalShortcut> action )
-        {
-            if (string.IsNullOrEmpty(callbackId)) throw new ArgumentException("Invalid callback", nameof(callbackId));
-
-            var attr = MessageTypes.GetMessageAttributes<GlobalShortcut>();
-            if (attr == null) return;
-
-            _apiEventHandlers.Add( new ApiEventHandler(
-               MessageType: attr.Type,
-               MessageSubType: attr.SubType,
-               MessageContainerAction: ( _, msg, envelope ) =>
-                   {
-                       var shortcut = (GlobalShortcut)msg;
-                       if (string.Equals( shortcut.callback_id, callbackId, StringComparison.OrdinalIgnoreCase ))
-                           action( this, shortcut );
-                   } ) );
-        }
-        */
-        /*
-        /// <summary>
-        ///     Register action to be called when a Global Shortcut is triggered
-        /// </summary>
-        public void OnMessageShortcut(string callbackId, Action<ISlackApp, MessageShortcut> action)
-        {
-            if (string.IsNullOrEmpty(callbackId)) throw new ArgumentException("Invalid callback", nameof(callbackId));
-
-            var attr = MessageTypes.GetMessageAttributes<MessageShortcut>();
-            if (attr == null) return;
-
-            _apiEventHandlers.Add( new ApiEventHandler(
-               MessageType: attr.Type,
-               MessageSubType: attr.SubType,
-               MessageContainerAction: ( _, msg, envelope ) =>
-                   {
-                       var shortcut = (MessageShortcut)msg;
-                       if (string.Equals( shortcut.callback_id, callbackId, StringComparison.OrdinalIgnoreCase ))
-                           action( this, shortcut );
-                   } ) );
-        }
-        */
-
-
         record CommandHandler( 
             string Command, 
             Action< ISlackApp, SlashCommand > CommandAction );
@@ -668,14 +567,16 @@ namespace SlackForDotNet
             return sb.ToString();
         }
 
-        public async Task<ViewsPublishResponse?> PublishHomepage( SlackSurface hometab, AppHomeOpened msg )
+        public async Task<ViewsPublishResponse?> OpenHomepageSurface( SlackSurface hometab, AppHomeOpened msg )
         {
             string key = $"home_{msg.user}";
 
             if (_surfaces.Exists( s => s.View!.external_id == key ))
                 return default;
+
+            var layouts = hometab.BuildLayouts();
             
-            if (hometab.Layouts.Count > 0)
+            if (layouts.Count > 0)
             {
                 var pub = new ViewsPublish
                           {
@@ -684,7 +585,7 @@ namespace SlackForDotNet
                                      {
                                          external_id = key,
                                          callback_id = key,
-                                         blocks      = hometab.Layouts
+                                         blocks      = layouts
                                      }
                           };
                 hometab.View ??= pub.view;
@@ -700,81 +601,121 @@ namespace SlackForDotNet
             return default;
         }
 
-        public async Task OpenModal( SlackSurface surface, string triggerId )
+        public async Task OpenModalSurface( SlackSurface surface, string triggerId )
         {
             if (string.IsNullOrEmpty( triggerId ))
                 throw new ArgumentException( "TriggerId must contain a value" );
 
             surface.View ??= new ModalView
                              {
-                                 title = surface.Title,
-                                 submit = "submit",
-                                 close = "close",
+                                 title           = surface.Title,
+                                 submit          = "submit",
+                                 close           = "close",
                                  notify_on_close = true
                              };
-            surface.View.callback_id ??= surface.UniqueValue;
-            if (surface.Layouts.Count == 0 && surface.View?.blocks != null)
-                surface.Layouts.AddRange(surface.View.blocks);
-            surface.View!.blocks = surface.Layouts;
-
-            foreach (var layout in surface.Layouts)
-                layout.block_id ??= surface.View.callback_id + new Random().NextDouble();
+            surface.BuildLayouts();
 
             var response = await Send< ViewOpen, ViewResponse >( new ViewOpen
                                                                  {
                                                                      trigger_id = triggerId, 
-                                                                     view = surface.View
+                                                                     view = surface.View.Duplicate()
                                                                  } );
             if (response?.ok == true)
             {
+                surface.ResponseMetaData = response.response_metadata;
                 surface.UpdateStateFrom( response.view );
 
                 RegisterSurface( surface );
             }
         }
 
-        public async Task OpenSurface( SlackSurface surface, string channelId, string? userId = null, string? ts = null)
+        public async Task OpenMessageSurface( SlackSurface surface, string channelId, string? userId = null, string? ts = null)
         {
-            var response = await Say( surface.Layouts, channel: channelId, user: userId, ts: ts );
+            var layouts = surface.BuildLayouts();
+
+            var response = await Say( layouts, channel: channelId, user: userId, ts: ts );
 
             if (response?.ok == true)
             {
                 if (response is ChatPostMessageResponse chatResponse)
                 {
-                    surface.ts         = chatResponse.ts ?? chatResponse.message_ts;
+                    surface.ts        = chatResponse.message?.ts ?? chatResponse.ts ?? chatResponse.message_ts;
                     surface.channelId = channelId;
                     surface.userId    = userId;
-                    surface.message    = chatResponse.message;
+                    surface.message   = chatResponse.message;
 
                     RegisterSurface( surface );
                 }
             }
         }
 
-        public async void Update( SlackSurface surface )
+        public void ModalErrors( string envelopeId, Dictionary< string, string > errors )
         {
-            var pub = new ViewUpdate
-                      {
-                          hash        = surface.View.hash,
-                          view_id     = surface.View.id,
-                          view = new HometabView
-                                 {
-                                     callback_id  = surface.View.callback_id,
-                                     external_id  = surface.View.external_id,
-                                     blocks       = surface.Layouts
-                                 }
-                      };
-            var response = await Send<ViewUpdate, ViewResponse>(pub);
-            if (response?.ok == true)
+            Push(new AcknowledgeResponse<ViewResponseAction>(
+                                                             envelopeId,
+                                                             new ViewResponseAction
+                                                             {
+                                                                 response_action = "errors",
+                                                                 errors = errors
+                                                             }));
+        }
+
+        public void UpdateModal( SlackSurface surface, string envelopeId )
+        {
+            surface.BuildLayouts();
+
+            if (surface.View == null)       // Modals must have views
+                return;
+
+            Push( new AcknowledgeResponse< ViewResponseAction >( 
+                envelopeId, 
+                new ViewResponseAction
+                {
+                    response_action = "update", 
+                    view = surface.View
+                } ) );
+        }
+
+        public async void Update(SlackSurface surface)
+        {
+            var layouts = surface.BuildLayouts();
+
+            if (surface.View == null)
             {
-                surface.UpdateStateFrom( response.view );
+                // Message surface
+                var update = new ChatUpdate
+                             {
+                                 channel = surface.channelId,
+                                 ts      = surface.ts,
+                                 blocks  = layouts
+                             };
+                var response = await Send<ChatUpdate, ChatResponse>(update);
+                if (response?.ok == true)
+                {
+                }
+            }
+            else
+            {
+                var pub = new ViewUpdate
+                          {
+                              hash    = surface.View.hash,
+                              view_id = surface.View.id,
+                              view    = surface.View.Duplicate()
+                          };
+
+                var response = await Send<ViewUpdate, ViewResponse>(pub);
+                if (response?.ok == true)
+                {
+                    surface.UpdateStateFrom(response.view);
+                }
             }
         }
 
+
         public async Task RemoveSurface( SlackSurface surface )
         {
-            await Send< ChatDelete, MessageResponse >( 
-                new ChatDelete { channel = surface.channelId!, ts = surface.ts!, as_user = true } );
+            var response = await Send< ChatDelete, MessageResponse >( 
+                new ChatDelete { channel = surface.channelId!, ts = surface.ts! } );
 
             if (_surfaces.Contains( surface ))
                 _surfaces.Remove( surface );

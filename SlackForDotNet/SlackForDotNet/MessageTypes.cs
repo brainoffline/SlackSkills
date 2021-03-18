@@ -118,6 +118,9 @@ namespace SlackForDotNet
         {
             var jo = JToken.ReadFrom( reader );
 
+            if (!jo.HasValues)
+                return default;
+
             var type    = jo[nameof(SlackMessage.type)]?.Value<string>();
             var subtype = jo[nameof(SlackMessage.subtype)]?.Value<string>();
 

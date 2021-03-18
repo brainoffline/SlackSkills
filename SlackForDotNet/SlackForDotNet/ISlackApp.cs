@@ -67,10 +67,12 @@ namespace SlackForDotNet
 
         string CommandHelp();
 
-        Task< ViewsPublishResponse? > PublishHomepage( SlackSurface hometab, AppHomeOpened msg );
-        Task                          OpenSurface( SlackSurface     surface, string        channel, string? user = null, string? ts = null );
-        Task                          OpenModal( SlackSurface       surface, string        triggerId );
-        void                          Update( SlackSurface          surface );
+        Task< ViewsPublishResponse? > OpenHomepageSurface( SlackSurface hometab, AppHomeOpened msg );
+        Task                          OpenMessageSurface( SlackSurface     surface, string        channel, string? user = null, string? ts = null );
+        Task                          OpenModalSurface( SlackSurface       surface, string        triggerId );
+        void                          Update(SlackSurface           surface);
+        void                          UpdateModal(SlackSurface      surface,    string envelopeId);
+        void                          ModalErrors(string            envelopeId, Dictionary<string,string> errors);
         Task                          RemoveSurface( SlackSurface   surface );
 
 

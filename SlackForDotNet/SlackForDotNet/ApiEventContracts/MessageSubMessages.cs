@@ -161,8 +161,8 @@ namespace SlackForDotNet
     [ SlackMessage( "message", subType: "message_changed", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageChanged : MessageBase
     {
-        public MessageGeneral message          { get; set; }
-        public MessageGeneral previous_message { get; set; }
+        public MessageBase message          { get; set; }
+        public MessageBase previous_message { get; set; }
     }
     [ SlackMessage( "message", subType: "message_deleted", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageDeleted : MessageBase
@@ -172,20 +172,20 @@ namespace SlackForDotNet
     [ SlackMessage( "message", subType: "message_replied", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageReplied : MessageBase
     {
-        public MessageGeneral message { get; set; }
+        public MessageBase message { get; set; }
     }
 
     [SlackMessage( "message", subType: "pinned_item", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" })]
     public class MessagePinnedItem : MessageBase
     {
-        public string         item_type { get; set; }
-        public MessageGeneral item      { get; set; }
+        public string      item_type { get; set; }
+        public MessageBase item      { get; set; }
     }
 
     [SlackMessage( "message", subType: "thread_broadcast", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageThreadBroadcast : MessageBase
     {
-        public MessageGeneral message { get; set; }
+        public MessageBase message { get; set; }
     }
     
     /// <summary>
@@ -199,7 +199,7 @@ namespace SlackForDotNet
     [SlackMessage( "message", subType: "unpinned_item", scopes: new[] { "channels:history", "groups:history", "im:history", "mpim:history" } ) ]
     public class MessageUnPinned : MessageBase
     {
-        public string         item_type { get; set; }
-        public MessageGeneral item      { get; set; }
+        public string      item_type { get; set; }
+        public MessageBase item      { get; set; }
     }
 }

@@ -32,7 +32,7 @@ namespace SlackForDotNet
         
         public           bool                         ShortConnections { get; set; }
 
-        public event Action<SlackMessage>? ApiEventReceived;
+        public event Action< SlackMessage >? ApiEventReceived;
 
         public SlackSocket( SlackClient slackClient, ILogger< SlackApp >? logger, ISlackApp slackApp )
         {

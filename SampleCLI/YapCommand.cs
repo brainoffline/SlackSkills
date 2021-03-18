@@ -60,7 +60,7 @@ namespace SampleCLI
                                                              }
                                                }
                                } );
-            SlackApp!.OpenSurface( surface, Message.channel );
+            SlackApp!.OpenMessageSurface( surface, Message.channel );
         }
 
         private void TalkBack()
@@ -88,7 +88,7 @@ namespace SampleCLI
                                                    Clicked = ( slackSurface, button, action ) => OpenModal( action.trigger_id! )
                                                }
                                } );
-            SlackApp!.OpenSurface(surface, Message.channel);
+            SlackApp!.OpenMessageSurface(surface, Message.channel);
         }
 
         private async void OpenModal( string triggerId )
@@ -98,10 +98,11 @@ namespace SampleCLI
                                         {
                                             Title = "Yappity Yapp Modal"
                                         }
-               .Add(new InputLayout("Useful information goes here",
+               .Add(new InputLayout("yap-block-id",
+                                    "Useful information goes here",
                                     tie = (new TextInputElement { action_id = "useful-id" })));
 
-            await SlackApp!.OpenModal( surface, triggerId );
+            await SlackApp!.OpenModalSurface( surface, triggerId );
             if (surface != null)
                 surface.Submitted = Submitted;
 

@@ -19,14 +19,52 @@ namespace SlackForDotNet.Surface
     [JsonConverter( typeof(ElementConverter))]
     public abstract class Element
     {
-        public string type      { get; }
-        public string action_id { get; set; }
+        public string  type      { get; }
+        public string? action_id { get; set; }
 
-        protected Element( [ NotNull ] string type, string id )
+        protected Element( [ NotNull ] string type, string? id )
         {
             this.type = type;
             action_id = id;
         }
+    }
+
+    /// <summary>
+    /// Display Text
+    /// </summary>
+    public class PlainTextElement : Element
+    {
+        public string text { get; }
+
+        public PlainTextElement(string text) : base("plain_text", null)
+        {
+            this.text = text;
+        }
+
+        public static implicit operator PlainTextElement(string text) =>
+            new PlainTextElement(text);
+
+        public static implicit operator string(PlainTextElement element) =>
+            element.text;
+    }
+
+    /// <summary>
+    /// Display Markdown
+    /// </summary>
+    public class MarkdownElement : Element
+    {
+        public string text { get; }
+
+        public MarkdownElement(string text) : base("mrkdwn", null)
+        {
+            this.text = text;
+        }
+
+        public static implicit operator MarkdownElement(string text) =>
+            new MarkdownElement(text);
+
+        public static implicit operator string(MarkdownElement element) =>
+            element.text;
 
     }
 
@@ -844,7 +882,7 @@ namespace SlackForDotNet.Surface
                 break;
 
             default:
-                    return default;
+                return default;
             }
 
             serializer.Populate(jo.CreateReader(), existingValue);

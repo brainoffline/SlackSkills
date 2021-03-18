@@ -27,12 +27,14 @@ namespace SlackForDotNet.Surface
         public                    MessageBase?               message;
 
         public string? TriggerId { get; private set; }
+        public string? EnvelopeId { get; private set; }
         public View?   View      { get; set; }
 
-        public    int            UniqueId    { get; set; }
-        public    string         UniqueValue { get; set; }
-        public    List< Layout > Layouts     { get; set; } = new ();    
-        public    PlainText      Title       { get; set; } = "";
+        public  int                    UniqueId         { get; set; }
+        public  string                 UniqueValue      { get; set; }
+        private List< Layout >         Layouts          { get; set; } = new();
+        public  PlainText              Title            { get; set; } = "";
+        public  ViewResponse.MetaData? ResponseMetaData { get; set; }
 
         public Action< ViewSubmission >? Submitted = null;
         public Action< ViewClosed >?     Closed    = null;
@@ -44,9 +46,55 @@ namespace SlackForDotNet.Surface
             UniqueValue = $"_{UniqueId}_";
         }
 
-        public SlackSurface Add( Layout layout )
+        public bool HasLayouts =>
+            Layouts.Count > 0;
+
+        public virtual List< Layout > BuildLayouts()
         {
-            Layouts.Add( layout );
+            if (Layouts.Count == 0 && View?.blocks != null)
+                Add(View.blocks);
+            if (View != null)
+            {
+                View.blocks      =   Layouts;
+                View.callback_id ??= UniqueValue;
+
+                if (View is ModalView modal)
+                {
+                    modal.title = Title;
+                }
+            }
+            var callbackId = View?.callback_id ?? UniqueValue;
+
+            foreach (var layout in Layouts)
+                layout.block_id ??= callbackId + new Random().NextDouble();
+
+            return Layouts;
+        }
+
+        public SlackSurface ClearLayouts()
+        {
+            Layouts.Clear();
+
+            return this;
+        }
+
+        public SlackSurface Add(Layout layout)
+        {
+            if (layout.block_id != null)
+            {
+                var old = FindLayout( layout.block_id );
+                if (old != null)
+                    Layouts.Remove( old );
+            }
+
+            Layouts.Add(layout);
+
+            return this;
+        }
+        public SlackSurface Add(IEnumerable<Layout> layouts)
+        {
+            foreach (var layout in layouts)
+                Add(layout);
 
             return this;
         }
@@ -72,10 +120,10 @@ namespace SlackForDotNet.Surface
                 // Update block_id's
                 for (int i = 0; i < view.blocks.Count; i++)
                 {
-                    var slackView = view.blocks[i];
+                    var updatedLayout = view.blocks[i];
                     var layout    = Layouts[i];
                     if (string.IsNullOrEmpty(layout.block_id))
-                        layout.block_id = slackView.block_id;
+                        layout.block_id = updatedLayout.block_id;
                 }
             }
 
@@ -98,9 +146,8 @@ namespace SlackForDotNet.Surface
                 {
                     var actionId = actionPair.Key;
                     var actionValue = actionPair.Value;
-                    var type = actionValue.type;
 
-                    var element = FindElement(type, blockId, actionId);
+                    var element = FindElement(blockId, actionId);
                     switch (element)
                     {
                         case TextInputElement e:
@@ -159,11 +206,12 @@ namespace SlackForDotNet.Surface
         
         }
 
-        public void Process( ViewSubmission viewSubmission, string envelopeId )
+        public virtual void Process( ViewSubmission viewSubmission, string envelopeId )
         {
             TriggerId = viewSubmission.trigger_id ?? "";
 
             UpdateState(viewSubmission.view?.state?.values);
+            EnvelopeId = envelopeId;
 
             Submitted?.Invoke( viewSubmission );
 
@@ -171,7 +219,7 @@ namespace SlackForDotNet.Surface
             SlackApp.Push( new AcknowledgeResponse<ViewSubmissionResult>{ envelope_id = envelopeId, payload = result } );
         }
 
-        public void Process( ViewClosed viewClosed )
+        public virtual void Process( ViewClosed viewClosed )
         {
             TriggerId = null;
 
@@ -180,13 +228,13 @@ namespace SlackForDotNet.Surface
             Closed?.Invoke(viewClosed);
         }
 
-        public void Process( BlockSuggestion blockSuggestion, string envelopeId )
+        public virtual void Process( BlockSuggestion blockSuggestion, string envelopeId )
         {
-            TriggerId = blockSuggestion.trigger_id ?? "";
+            TriggerId = blockSuggestion.trigger_id;
 
             UpdateState(blockSuggestion.state?.values ?? blockSuggestion.view?.state?.values);
 
-            var element = FindElement("", blockSuggestion.block_id, blockSuggestion.action_id);
+            var element = FindElement(blockSuggestion.block_id, blockSuggestion.action_id);
             switch (element)
             {
             case SelectExternalElement select:
@@ -206,7 +254,7 @@ namespace SlackForDotNet.Surface
             }
         }
 
-        public void Process(BlockActions blockActions)
+        public virtual void Process(BlockActions blockActions)
         {
             TriggerId = blockActions.trigger_id ?? "";
             
@@ -216,12 +264,10 @@ namespace SlackForDotNet.Surface
             {
                 foreach (var slackAction in blockActions.actions)
                 {
-                    var type     = slackAction.type;
                     var blockId  = slackAction.block_id;
                     var actionId = slackAction.action_id;
-                    var actionTs = slackAction.action_ts;
                     
-                    var element = FindElement( type, blockId, actionId );
+                    var element = FindElement( blockId, actionId );
 
                     switch (element)
                     {
@@ -304,7 +350,10 @@ namespace SlackForDotNet.Surface
             }
         }
 
-        private Element? FindElement( string type, string blockId, string actionId )
+        public Layout? FindLayout( string blockId ) =>
+            Layouts.FirstOrDefault( layout => layout.block_id == blockId );
+
+        public Element? FindElement( string blockId, string actionId )
         {
             foreach (var layout in Layouts.Where( layout => layout.block_id == blockId ))
             {

@@ -15,7 +15,7 @@ namespace SampleCLI
         public ExampleHometabSurface( [ NotNull ] ISlackApp slackApp ) : base( slackApp )
         {
             Title = "SlackDK Title";
-            Layouts = new List< Layout >
+            var layouts = new List< Layout >
                       {
                           new HeaderLayout( "SlackDK Home Page" ),
                           new SectionLayout { text = new Markdown( "*Welcome* to the _new_ and _improved_ SlackDK ~inner-city apartment~ home page" ) },
@@ -302,6 +302,7 @@ namespace SampleCLI
                                           }
                           },
                       };
+            Add( layouts );
         }
     }
 }

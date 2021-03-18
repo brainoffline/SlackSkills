@@ -20,7 +20,7 @@ namespace SlackForDotNet
     ///     Possible values: home, modal
     /// </summary>
     [JsonConverter( typeof(ViewConverter))]
-    public abstract class View 
+    public class View 
     {
         public string          type                  { get; set; }
         public string?         previous_view_id      { get; set; }
@@ -43,6 +43,21 @@ namespace SlackForDotNet
             blocks.Add( block );
 
             return this;
+        }
+
+        internal View() { } // pseudo abstract outside library
+
+        public View Duplicate( )
+        {
+            View view = (View)MemberwiseClone();
+            view.id           = null;
+            view.root_view_id = null;
+            view.app_id       = null;
+            view.bot_id       = null;
+            view.team_id      = null;
+            view.hash         = null;
+
+            return view;
         }
 
         public class State
@@ -87,6 +102,14 @@ namespace SlackForDotNet
             type = "modal";
         }
     }
+
+    public class ViewResponseAction
+    {
+        public string                    response_action { get; set; } // update, push, errors
+        public View                      view            { get; set; }
+        public Dictionary<string,string> errors          { get; set; }  // block-id, message
+    }
+
 
     public class ViewConverter : JsonConverter<View?>
     {
