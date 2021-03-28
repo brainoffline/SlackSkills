@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -92,6 +93,32 @@ namespace Asciis
                     list.Add(arg);
                 argStart = -1;
             }
+        }
+
+        public static IEnumerable<string> EnumerateLines(this TextReader reader)
+        {
+            string? line;
+
+            while ((line = reader.ReadLine()) != null)
+                yield return line;
+        }
+        public static IEnumerable<string> EnumerateLines(this string str)
+        {
+            using var reader = new StringReader( str );
+            return EnumerateLines( reader );
+        }
+
+        public static char TryGet(this StringBuilder sb, int index)
+        {
+            return sb.Length > index
+                       ? sb[index]
+                       : '\0';
+        }
+        public static char TryGet(this string str, int index)
+        {
+            return str.Length > index
+                       ? str[index]
+                       : '\0';
         }
     }
 }

@@ -1,0 +1,446 @@
+﻿using System;
+using System.Collections.Generic;
+
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+// Some tests borrowed from 
+// https://github.com/lukesampson/figlet/blob/master/figletlib/layout_test.go
+
+namespace Asciis.Tests
+{
+    [TestClass]
+    public class FigletTests
+    {
+        [ TestInitialize ]
+        public void Init()
+        {
+		}
+
+
+        [TestMethod]
+		public void Test_smush_with_lch_empty_always_returns_rch()
+        {
+            var rchs = new [] { 'a', '!', '$' };
+            foreach (var rch in rchs)
+                TestSmushemAllSmushModes( ' ', rch, rch );
+        }
+
+        [TestMethod]
+		public void Test_smush_with_rch_empty_always_returns_lch()
+        {
+            var lchs = new char[] { 'a', '!', '$' };
+            foreach (var lch in lchs)
+                TestSmushemAllSmushModes( lch, ' ', lch );
+		}
+
+		[TestMethod]
+		public void Test_smush_with_smush_not_set_returns_null()
+        {
+            TestSmush('|', '|', SmushMode.Unknown, '\0');
+		}
+
+		[TestMethod]
+		public void Test_smush_universal()
+        {
+			// smush mode of SMSmush but not SMKern is universal smushing
+            TestSmush('|', '$', SmushMode.Smush, '|');
+            TestSmush('$', '|', SmushMode.Smush, '|');
+            TestSmush('l', 'r', SmushMode.Smush, 'r');
+		}
+
+		[TestMethod]
+		public void Test_smush_combines_2_hardblanks_when_SMHardBlank()
+		{
+            TestSmush('$', '$', SmushMode.Kern | SmushMode.Smush | SmushMode.Hardblank, '$');
+		}
+
+		[TestMethod]
+		public void Test_smush_equal()
+		{
+            TestSmush('x', 'x', SmushMode.Kern | SmushMode.Smush | SmushMode.Equal, 'x');
+		}
+
+		[TestMethod]
+		public void Test_smush_lowline()
+        {
+            var replacements = "|/\\[]{}()<>";
+            foreach (var ch in replacements)
+            {
+                TestSmushLowLine( '_', ch, ch );
+                TestSmushLowLine( ch, '_', ch );
+            }
+        }
+
+		[TestMethod]
+		public void Test_smush_heirarchy()
+        {
+            TestSmushHierarchy( '|', '\\', '\\' );
+            TestSmushHierarchy( '}', '|',  '}' );
+
+            TestSmushHierarchy( '/', '>',  '>' );
+            TestSmushHierarchy( '{', '\\', '{' );
+
+            TestSmushHierarchy( '[', '(', '(' );
+            TestSmushHierarchy( '>', ']', '>' );
+
+            TestSmushHierarchy( '}', ')', ')' );
+            TestSmushHierarchy( '<', '{', '<' );
+
+            TestSmushHierarchy( '(', '<', '<' );
+            TestSmushHierarchy( '>', '(', '>' );
+        }
+
+		[TestMethod]
+		public void Test_smush_pairs()
+        {
+            TestSmushPair( '[', ']', '|' );
+            TestSmushPair( ']', '[', '|' );
+
+            TestSmushPair( '(', ')', '|' );
+            TestSmushPair( ')', '(', '|' );
+
+            TestSmushPair( '{', '}', '|' );
+            TestSmushPair( '}', '{', '|' );
+        }
+
+		[TestMethod]
+		public void Test_smush_bigX()
+        {
+            var mode = SmushMode.Smush | SmushMode.Kern | SmushMode.Bigx;
+            TestSmush( '/',  '\\', mode, '|' );
+            TestSmush( '\\', '/',  mode, 'Y' );
+            TestSmush( '>',  '<',  mode, 'X' );
+        }
+
+		[TestMethod]
+        public void Test_smush_hardblank()
+		{
+            var mode = SmushMode.Smush | SmushMode.Kern | SmushMode.Hardblank;
+            TestSmush( '$', '$', mode, '$' );
+            TestSmush( ' ', '$', mode, '$' );
+        }
+
+		[TestMethod]
+		public void Test_smushamt()
+        {
+            testSmushamtLine( "|_ ", "  _", 3 );
+            testSmushamtLine( "",    "__",  0 );
+        }
+
+		[TestMethod]
+		public void Test_addChar()
+        {
+            testAddCharLine( "",    "",     "" );
+            testAddCharLine( "",    "__",   "__" );
+            testAddCharLine( "",    " __",  "__");
+            testAddCharLine( "|_ ", "  _",  "|__" );
+            testAddCharLine( "|_ ", "   _", "|__" );
+        }
+
+        [TestMethod]
+		public void Test_smushChar()
+        {
+            testSmushCharLine( "/ ", "  / ", 4, "/ " );
+            testSmushCharLine( "",   " _",   1, "_" );
+        }
+
+        List<int> ValidSmushModes()
+        {
+            var modes = new List< int > { 0 };
+            for (var i = 1; i <= 128; i *= 2)
+            {
+                modes.Add( i );
+                for (var j = 1; j < i; j *= 2)
+                    modes.Add( i + j );
+            }
+
+            return modes;
+        }
+
+        List<int> SmushModes()
+        {
+            var modes = new List< int > { 0 };
+            for (int i = 0; i < 8; i++)
+                modes.Add( 1 << i );
+
+            return modes;
+        }
+
+        void TestSmushLowLine(char lch, char rch, char expect) =>
+    TestSmush(lch, rch, SmushMode.Kern | SmushMode.Smush | SmushMode.Underscore, expect);
+
+        void TestSmushHierarchy(char lch, char rch, char expect) =>
+            TestSmush(lch, rch, SmushMode.Kern | SmushMode.Smush | SmushMode.Hierarchy, expect);
+
+        void TestSmushPair(char lch, char rch, char expect) =>
+            TestSmush(lch, rch, SmushMode.Kern | SmushMode.Smush | SmushMode.Pair, expect);
+
+        void TestSmush(char lch, char rch, SmushMode mode, char expect)
+        {
+            var figlet = new Figlet( smushMode: mode );
+            var result = figlet.SmushEm(lch, rch);
+            Assert.AreEqual(expect, result);
+        }
+
+        void TestSmushemAllSmushModes(char lch, char rch, char expect)
+        {
+            for (SmushMode smushMode = SmushMode.Equal; smushMode < SmushMode.Smush; smushMode++)
+            {
+                var figlet = new Figlet( smushMode: smushMode );
+                var result = figlet.SmushEm(lch, rch);
+                Assert.AreEqual(expect, result);
+            }
+        }
+        void testSmushamtLine(string l, string r, int expected)
+        {
+            var smushMode = 
+                SmushMode.Smush | SmushMode.Kern | SmushMode.Equal | SmushMode.Underscore | SmushMode.Hierarchy | SmushMode.Pair;
+
+            var line = new Figlet( smushMode: smushMode );
+            var ch   = new Figlet( smushMode: smushMode );
+
+            // TODO
+        }
+
+        void testAddCharLine(string l, string c, string expect)
+        {
+            var smushMode =
+                SmushMode.Smush | SmushMode.Kern | SmushMode.Equal | SmushMode.Underscore | SmushMode.Hierarchy | SmushMode.Pair;
+
+            var line = new Figlet(smushMode: smushMode);
+            var ch   = new Figlet(smushMode: smushMode);
+
+            // TODO
+
+            //(*line).art[0] =  [] rune(l)
+            //(*char).art[0] =  [] rune(c)
+
+            //s:= testSettings(SMKern + SMSmush + SMEqual + SMLowLine + SMHierarchy + SMPair)
+            //result := addChar(char, line, s)
+            //if string(result.art[0]) != expect {
+            //    t.Errorf("addChar %q + %q made %q, expected %q", l, c, string((*line).art[0]), expect)
+
+            //}
+        }
+
+        void testSmushCharLine(string l, string c, int amount, string expect)
+        {
+            //if amount > len(c) {
+            //    t.Errorf("amount %v is > character length %v", amount, len(c))
+            //    return
+            //}
+            //line:= newFigText(1)
+            //char := newFigText(1)
+            //    (*line).art[0] =  [] rune(l)
+            //(*char).art[0] =  []     rune(c)
+            //s:= testSettings(SMKern + SMSmush + SMEqual + SMLowLine + SMHierarchy + SMPair)
+            //result:= smushChar(char, line, amount, s)
+            //if string(result.art[0]) != expect {
+            //    t.Errorf("smushChar %q + %q made %q, expected %q", l, c, string((*line).art[0]), expect)
+            //}
+        }
+
+        [TestMethod]
+        public void Test_a()
+        {
+            var figlet = new Figlet();
+            figlet.Add('a');
+
+            var lines = figlet.Render();
+            var expected = @"       
+  __ _ 
+ / _` |
+| (_| |
+ \__,_|
+       
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_abcde()
+        {
+            var figlet = new Figlet();
+            figlet.Add("abcdefg");
+
+            var lines = figlet.Render();
+            var expected =
+@"       _             _       __       
+  __ _| |__   ___ __| | ___ / _| __ _ 
+ / _` | '_ \ / __/ _` |/ _ \ |_ / _` |
+| (_| | |_) | (_| (_| |  __/  _| (_| |
+ \__,_|_.__/ \___\__,_|\___|_|  \__, |
+                                |___/ 
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_abcde_kerning()
+        {
+            var figlet = new Figlet( smushMode: SmushMode.Kern );
+            figlet.Add("abcdefg");
+
+            var lines = figlet.Render();
+            var expected =
+@"        _               _         __        
+  __ _ | |__    ___  __| |  ___  / _|  __ _ 
+ / _` || '_ \  / __|/ _` | / _ \| |_  / _` |
+| (_| || |_) || (__| (_| ||  __/|  _|| (_| |
+ \__,_||_.__/  \___|\__,_| \___||_|   \__, |
+                                      |___/ 
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_words()
+        {
+            var figlet = new Figlet();
+            figlet.Add("Word One!");
+
+            var lines = figlet.Render();
+            var expected =
+@"__        __            _    ___             _ 
+\ \      / /__  _ __ __| |  / _ \ _ __   ___| |
+ \ \ /\ / / _ \| '__/ _` | | | | | '_ \ / _ \ |
+  \ V  V / (_) | | | (_| | | |_| | | | |  __/_|
+   \_/\_/ \___/|_|  \__,_|  \___/|_| |_|\___(_)
+                                               
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_words_Kern()
+        {
+            var figlet = new Figlet( smushMode: SmushMode.Kern);
+            figlet.Add("Word One!");
+
+            var lines = figlet.Render();
+            var expected =
+@"__        __               _    ___                _ 
+\ \      / /___   _ __  __| |  / _ \  _ __    ___ | |
+ \ \ /\ / // _ \ | '__|/ _` | | | | || '_ \  / _ \| |
+  \ V  V /| (_) || |  | (_| | | |_| || | | ||  __/|_|
+   \_/\_/  \___/ |_|   \__,_|  \___/ |_| |_| \___|(_)
+                                                     
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_words_Mini_Font()
+        {
+            var figlet = new Figlet(fontFile: Figlet.Fonts.Mini, smushMode: SmushMode.Kern);
+            figlet.Add("Word One!");
+
+            var lines = figlet.Render();
+            var expected =
+@"                   _            
+\    / _  ._ _|   / \ ._   _  | 
+ \/\/ (_) | (_|   \_/ | | (/_ o 
+                                
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_words_Big_Font()
+        {
+            var figlet = new Figlet(fontFile: Figlet.Fonts.Big, smushMode: SmushMode.Kern);
+            figlet.Add("Word One!");
+
+            var lines = figlet.Render();
+            var expected =
+@"__          __              _    ____                _ 
+\ \        / /             | |  / __ \              | |
+ \ \  /\  / /___   _ __  __| | | |  | | _ __    ___ | |
+  \ \/  \/ // _ \ | '__|/ _` | | |  | || '_ \  / _ \| |
+   \  /\  /| (_) || |  | (_| | | |__| || | | ||  __/|_|
+    \/  \/  \___/ |_|   \__,_|  \____/ |_| |_| \___|(_)
+                                                       
+                                                       
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_words_Slant_Font()
+        {
+            var figlet = new Figlet(fontFile: Figlet.Fonts.Slant, smushMode: SmushMode.Kern);
+            figlet.Add("Word One!");
+
+            var lines = figlet.Render();
+            var expected =
+@" _       __                  __   ____                __
+| |     / /____   _____ ____/ /  / __ \ ____   ___   / /
+| | /| / // __ \ / ___// __  /  / / / // __ \ / _ \ / / 
+| |/ |/ // /_/ // /   / /_/ /  / /_/ // / / //  __//_/  
+|__/|__/ \____//_/    \__,_/   \____//_/ /_/ \___/(_)   
+                                                        
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_words_Block_Font()
+        {
+            var figlet = new Figlet(fontFile: Figlet.Fonts.Block, smushMode: SmushMode.Kern);
+            figlet.Add("Word One!");
+
+            var lines = figlet.Render();
+            var expected =
+                @"                                                                                    
+_|          _|                            _|        _|_|                        _|  
+_|          _|    _|_|    _|  _|_|    _|_|_|      _|    _|  _|_|_|      _|_|    _|  
+_|    _|    _|  _|    _|  _|_|      _|    _|      _|    _|  _|    _|  _|_|_|_|  _|  
+  _|  _|  _|    _|    _|  _|        _|    _|      _|    _|  _|    _|  _|            
+    _|  _|        _|_|    _|          _|_|_|        _|_|    _|    _|    _|_|_|  _|  
+                                                                                    
+                                                                                    
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_words_Lean_Font()
+        {
+            var figlet = new Figlet(fontFile: Figlet.Fonts.Lean, smushMode: SmushMode.Kern);
+            figlet.Add("Word One!");
+
+            var lines = figlet.Render();
+            var expected =
+                @"                                                                                       
+  _/          _/                            _/        _/_/                        _/   
+ _/          _/    _/_/    _/  _/_/    _/_/_/      _/    _/  _/_/_/      _/_/    _/    
+_/    _/    _/  _/    _/  _/_/      _/    _/      _/    _/  _/    _/  _/_/_/_/  _/     
+ _/  _/  _/    _/    _/  _/        _/    _/      _/    _/  _/    _/  _/                
+  _/  _/        _/_/    _/          _/_/_/        _/_/    _/    _/    _/_/_/  _/       
+                                                                                       
+                                                                                       
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_words_Varsity_Font()
+        {
+            var figlet = new Figlet(fontFile: Figlet.Fonts.Varsity, smushMode: SmushMode.Kern);
+            figlet.Add("Word One!");
+
+            var lines = figlet.Render();
+            var expected =
+@" ____      ____                     __     ___                   _  
+|_  _|    |_  _|                   |  ]  .'   `.                | | 
+  \ \  /\  / / .--.   _ .--.   .--.| |  /  .-.  \ _ .--.  .---. | | 
+   \ \/  \/ // .'`\ \[ `/'`\]/ /'`\' |  | |   | |[ `.-. |/ /__\\| | 
+    \  /\  / | \__. | | |    | \__/  |  \  `-'  / | | | || \__.,|_| 
+     \/  \/   '.__.' [___]    '.__.;__]  `.___.' [___||__]'.__.'(_) 
+                                                                    
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+    }
+}
