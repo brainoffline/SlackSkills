@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -28,7 +29,7 @@ namespace Asciis.Tests
         [TestMethod]
 		public void Test_smush_with_rch_empty_always_returns_lch()
         {
-            var lchs = new char[] { 'a', '!', '$' };
+            var lchs = new [] { 'a', '!', '$' };
             foreach (var lch in lchs)
                 TestSmushemAllSmushModes( lch, ' ', lch );
 		}
@@ -123,18 +124,18 @@ namespace Asciis.Tests
 		[TestMethod]
 		public void Test_smushamt()
         {
-            testSmushamtLine( "|_ ", "  _", 3 );
-            testSmushamtLine( "",    "__",  0 );
+            TestSmushamtLine( "|_ ", "  _", 3 );
+            TestSmushamtLine( "",    "__",  0 );
         }
 
 		[TestMethod]
 		public void Test_addChar()
         {
-            testAddCharLine( "",    "",     "" );
-            testAddCharLine( "",    "__",   "__" );
-            testAddCharLine( "",    " __",  "__");
-            testAddCharLine( "|_ ", "  _",  "|__" );
-            testAddCharLine( "|_ ", "   _", "|__" );
+            TestAddCharLine( "",    "",     "" );
+            TestAddCharLine( "",    "__",   "__" );
+            TestAddCharLine( "",    " __",  "__");
+            TestAddCharLine( "|_ ", "  _",  "|__" );
+            TestAddCharLine( "|_ ", "   _", "|__" );
         }
 
         [TestMethod]
@@ -144,30 +145,8 @@ namespace Asciis.Tests
             testSmushCharLine( "",   " _",   1, "_" );
         }
 
-        List<int> ValidSmushModes()
-        {
-            var modes = new List< int > { 0 };
-            for (var i = 1; i <= 128; i *= 2)
-            {
-                modes.Add( i );
-                for (var j = 1; j < i; j *= 2)
-                    modes.Add( i + j );
-            }
-
-            return modes;
-        }
-
-        List<int> SmushModes()
-        {
-            var modes = new List< int > { 0 };
-            for (int i = 0; i < 8; i++)
-                modes.Add( 1 << i );
-
-            return modes;
-        }
-
         void TestSmushLowLine(char lch, char rch, char expect) =>
-    TestSmush(lch, rch, SmushMode.Kern | SmushMode.Smush | SmushMode.Underscore, expect);
+            TestSmush(lch, rch, SmushMode.Kern | SmushMode.Smush | SmushMode.Underscore, expect);
 
         void TestSmushHierarchy(char lch, char rch, char expect) =>
             TestSmush(lch, rch, SmushMode.Kern | SmushMode.Smush | SmushMode.Hierarchy, expect);
@@ -177,7 +156,7 @@ namespace Asciis.Tests
 
         void TestSmush(char lch, char rch, SmushMode mode, char expect)
         {
-            var figlet = new Figlet( smushMode: mode );
+            var figlet = new TestFiglet(smushMode: mode);
             var result = figlet.SmushEm(lch, rch);
             Assert.AreEqual(expect, result);
         }
@@ -186,58 +165,24 @@ namespace Asciis.Tests
         {
             for (SmushMode smushMode = SmushMode.Equal; smushMode < SmushMode.Smush; smushMode++)
             {
-                var figlet = new Figlet( smushMode: smushMode );
+                var figlet = new TestFiglet(smushMode: smushMode);
                 var result = figlet.SmushEm(lch, rch);
                 Assert.AreEqual(expect, result);
             }
         }
-        void testSmushamtLine(string l, string r, int expected)
+        void TestSmushamtLine(string lhs, string rhs, int expected)
         {
-            var smushMode = 
-                SmushMode.Smush | SmushMode.Kern | SmushMode.Equal | SmushMode.Underscore | SmushMode.Hierarchy | SmushMode.Pair;
-
-            var line = new Figlet( smushMode: smushMode );
-            var ch   = new Figlet( smushMode: smushMode );
-
             // TODO
         }
 
-        void testAddCharLine(string l, string c, string expect)
+        void TestAddCharLine(string lhs, string c, string expect)
         {
-            var smushMode =
-                SmushMode.Smush | SmushMode.Kern | SmushMode.Equal | SmushMode.Underscore | SmushMode.Hierarchy | SmushMode.Pair;
-
-            var line = new Figlet(smushMode: smushMode);
-            var ch   = new Figlet(smushMode: smushMode);
-
             // TODO
-
-            //(*line).art[0] =  [] rune(l)
-            //(*char).art[0] =  [] rune(c)
-
-            //s:= testSettings(SMKern + SMSmush + SMEqual + SMLowLine + SMHierarchy + SMPair)
-            //result := addChar(char, line, s)
-            //if string(result.art[0]) != expect {
-            //    t.Errorf("addChar %q + %q made %q, expected %q", l, c, string((*line).art[0]), expect)
-
-            //}
         }
 
-        void testSmushCharLine(string l, string c, int amount, string expect)
+        void testSmushCharLine(string lhs, string c, int amount, string expect)
         {
-            //if amount > len(c) {
-            //    t.Errorf("amount %v is > character length %v", amount, len(c))
-            //    return
-            //}
-            //line:= newFigText(1)
-            //char := newFigText(1)
-            //    (*line).art[0] =  [] rune(l)
-            //(*char).art[0] =  []     rune(c)
-            //s:= testSettings(SMKern + SMSmush + SMEqual + SMLowLine + SMHierarchy + SMPair)
-            //result:= smushChar(char, line, amount, s)
-            //if string(result.art[0]) != expect {
-            //    t.Errorf("smushChar %q + %q made %q, expected %q", l, c, string((*line).art[0]), expect)
-            //}
+            // TODO
         }
 
         [TestMethod]
@@ -442,5 +387,34 @@ _/    _/    _/  _/    _/  _/_/      _/    _/      _/    _/  _/    _/  _/_/_/_/  
             Assert.AreEqual(expected, lines);
         }
 
+        [TestMethod]
+        public void Test_All_Fonts()
+        {
+            var names = Figlet.FontNames();
+            var sb    = new StringBuilder();
+
+            foreach (var fontName in names)
+            {
+                sb.AppendLine( fontName );
+                sb.AppendLine( Figlet.Render( fontName, fontName, SmushMode.Kern ) );
+            }
+
+            Console.Write( sb.ToString() );
+            Assert.IsTrue( true );
+        }
+
+    }
+
+    public class TestFiglet : Figlet
+    {
+        public TestFiglet( string?        fontFile       = null,
+                       Justification? justification  = null,
+                       int?           maxOutputWidth = null,
+                       SmushMode?     smushMode      = null )
+            : base(fontFile, justification, maxOutputWidth, smushMode)
+        { }
+
+        public new char SmushEm( char lch, char rch ) =>
+            base.SmushEm( lch, rch );
     }
 }
