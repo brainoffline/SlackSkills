@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SlackSkills.csproj" />
+    <ProjectReference Include="..\SlackSkills\SlackSkills.csproj" />
   </ItemGroup>
 
 </Project>
