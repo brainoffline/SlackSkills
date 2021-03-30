@@ -12,7 +12,7 @@ namespace BrainSlack.Helpers
 {
     public class BadWords
     {
-        private static List< string > _badWords;
+        private static readonly List< string > BadWordList;
 
         static BadWords()
         {
@@ -20,10 +20,10 @@ namespace BrainSlack.Helpers
             var names = ass!.GetManifestResourceNames();
 
             using var stream = ass.GetManifestResourceStream("BrainSlack.Helpers.BadWords.json");
-            using var sr     = new StreamReader( stream );
-            var json = sr.ReadToEnd();
+            using var sr     = new StreamReader( stream ?? throw new InvalidOperationException() );
+            var       json   = sr.ReadToEnd();
 
-            _badWords = JsonConvert.DeserializeObject< List< string > >( json );
+            BadWordList = JsonConvert.DeserializeObject< List< string > >( json );
         }
 
         public static bool ContainsBadWords(string? text)
@@ -31,7 +31,7 @@ namespace BrainSlack.Helpers
             if (string.IsNullOrEmpty(text))
                 return false;
 
-            foreach (var badWord in _badWords)
+            foreach (var badWord in BadWordList)
             {
                 if (text.Contains(badWord, StringComparison.OrdinalIgnoreCase))
                     return true;
