@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 using Asciis;
 
-using SlackForDotNet;
-using SlackForDotNet.Surface;
-using SlackForDotNet.WebApiContracts;
+using SlackSkills;
+using SlackSkills.Surface;
+using SlackSkills.WebApiContracts;
 
 namespace SampleCLI
 {

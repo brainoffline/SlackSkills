@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 using Asciis;
 
-using SlackForDotNet;
-using SlackForDotNet.Surface;
-using SlackForDotNet.WebApiContracts;
+using SlackSkills;
+using SlackSkills.Surface;
+using SlackSkills.WebApiContracts;
 
 namespace SampleCLI
 {
@@ -98,13 +98,13 @@ namespace SampleCLI
                                         {
                                             Title = "Yappity Yapp Modal"
                                         }
-               .Add(new InputLayout("yap-block-id",
+               .Add(new InputLayout(
                                     "Useful information goes here",
-                                    tie = (new TextInputElement { action_id = "useful-id" })));
+                                    tie = (new TextInputElement { action_id = "useful-id" }),
+                                    blockId: "yap-block-id"));
 
             await SlackApp!.OpenModalSurface( surface, triggerId );
-            if (surface != null)
-                surface.Submitted = Submitted;
+            surface.Submitted = Submitted;
 
             void Submitted(ViewSubmission vs)
             {

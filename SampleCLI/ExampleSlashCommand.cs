@@ -3,8 +3,8 @@ using System.Collections.Generic;
 
 using Asciis;
 
-using SlackForDotNet;
-using SlackForDotNet.Surface;
+using SlackSkills;
+using SlackSkills.Surface;
 
 namespace SampleCLI
 {

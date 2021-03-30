@@ -3,8 +3,8 @@ using System.Collections.Generic;
 
 using JetBrains.Annotations;
 
-using SlackForDotNet;
-using SlackForDotNet.Surface;
+using SlackSkills;
+using SlackSkills.Surface;
 
 namespace SampleCLI
 {
@@ -113,7 +113,7 @@ namespace SampleCLI
                           {
                               block_id = "select-block",
                               text     = new Markdown( "Fixed list for selection" ),
-                              accessory = new SlackForDotNet.Surface.SelectElement
+                              accessory = new SlackSkills.Surface.SelectElement
                                           {
                                               action_id = "what-selection",
                                               options = new List< Option >

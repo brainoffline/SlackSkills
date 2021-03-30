@@ -186,6 +186,49 @@ namespace Asciis.Tests
         }
 
         [TestMethod]
+        public void Test_render()
+        {
+            var lines = Figlet.Render( "a" );
+            var expected = @"       
+  __ _ 
+ / _` |
+| (_| |
+ \__,_|
+       
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_render_alphabet()
+        {
+            var lines = Figlet.Render("abcdefghijklmnopqrstuvwxyz", smushMode: SmushMode.Kern);
+            var expected = 
+@"        _               _         __         _      _   _  _     _                                                    _                                             
+  __ _ | |__    ___  __| |  ___  / _|  __ _ | |__  (_) (_)| | __| | _ __ ___   _ __    ___   _ __    __ _  _ __  ___ | |_  _   _ __   ____      ____  __ _   _  ____
+ / _` || '_ \  / __|/ _` | / _ \| |_  / _` || '_ \ | | | || |/ /| || '_ ` _ \ | '_ \  / _ \ | '_ \  / _` || '__|/ __|| __|| | | |\ \ / /\ \ /\ / /\ \/ /| | | ||_  /
+| (_| || |_) || (__| (_| ||  __/|  _|| (_| || | | || | | ||   < | || | | | | || | | || (_) || |_) || (_| || |   \__ \| |_ | |_| | \ V /  \ V  V /  >  < | |_| | / / 
+ \__,_||_.__/  \___|\__,_| \___||_|   \__, ||_| |_||_|_/ ||_|\_\|_||_| |_| |_||_| |_| \___/ | .__/  \__, ||_|   |___/ \__| \__,_|  \_/    \_/\_/  /_/\_\ \__, |/___|
+                                      |___/          |__/                                   |_|        |_|                                               |___/      
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
+        public void Test_render_alphabet_mini()
+        {
+            
+            var lines = Figlet.Render("abcdefghijklmnopqrstuvwxyz", Figlet.Fonts.Mini, SmushMode.Kern);
+            var expected =
+@"                    _                                                                     
+ _. |_   _  _|  _ _|_ _  |_  o o |  | ._ _  ._   _  ._   _. ._ _ _|_                   _  
+(_| |_) (_ (_| (/_ | (_| | | | | |< | | | | | | (_) |_) (_| | _>  |_ |_| \/ \/\/ >< \/ /_ 
+                      _|      _|                    |     |                         /     
+";
+            Assert.AreEqual(expected, lines);
+        }
+
+        [TestMethod]
         public void Test_a()
         {
             var figlet = new Figlet();

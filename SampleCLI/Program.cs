@@ -1,11 +1,11 @@
 ﻿using Asciis;
 using Microsoft.Extensions.Logging;
-using SlackForDotNet;
+using SlackSkills;
 
 using System;
 using System.Threading.Tasks;
 
-using static SlackForDotNet.SlackConstants;
+using static SlackSkills.SlackConstants;
 
 // ReSharper disable CheckNamespace
 
@@ -176,7 +176,7 @@ namespace SampleCLI
 
     }
 
-    [ Command( "SampleCLI", Description = "Sample Slack CLI using SlackForDotNet" ) ]
+    [ Command( "SampleCLI", Description = "Sample Slack CLI using SlackSkills" ) ]
     class CommandLine
     {
         [ Param( "i|Id|ClientId", "Slack Client Id. Mandatory" ) ]

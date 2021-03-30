@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Asciis\Asciis.csproj" />
-    <ProjectReference Include="..\SlackForDotNet\SlackForDotNet\SlackForDotNet.csproj" />
+    <ProjectReference Include="..\SlackSkills\SlackSkills.csproj" />
   </ItemGroup>
 
 </Project>
