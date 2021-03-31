@@ -1,0 +1,42 @@
+name: Release to NuGet
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+
+  build:
+
+    strategy:
+      matrix:
+        configuration: [ Release ]
+
+    runs-on: windows-latest  
+
+    env:
+      Solution_Name: SlackSkills.sln
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # Install the .NET Core workload
+    - name: Install .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+
+    - name: Restore the application
+      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
+      env:
+        Configuration: ${{ matrix.configuration }}
+
+    - name: Create the NuGet package
+      run: dotnet pack -c Release /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="See https://github.com/BrainOffline/SlackSkills/releases/tag/${{ github.event.release.tag_name }}"
+
+    - name: Publish Nuget Package
+      run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json --no-symbols true
+      
