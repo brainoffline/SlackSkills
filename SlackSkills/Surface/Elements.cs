@@ -96,9 +96,9 @@ namespace SlackSkills.Surface
     /// </remarks>
     public class ImageElement : Element,
                                 ISectionLayoutElement,
+                                IContextLayoutElement,
                                 IActionsLayoutElement,
                                 IInputLayoutElement
-
     {
         public string image_url { get; set; }
         public string alt_text  { get; set; }
