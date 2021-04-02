@@ -8,10 +8,6 @@ jobs:
 
   build:
 
-    strategy:
-      matrix:
-        configuration: [ Release ]
-
     runs-on: windows-latest  
 
     env:
@@ -28,8 +24,11 @@ jobs:
       with:
         dotnet-version: 5.0.x
 
-    - name: Restore dependencies
+    - name: Restore the application
       run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore -c Release
 
     - name: Create the NuGet package
       run: dotnet pack -c Release .\SlackSkills\SlackSkills.csproj /p:NuspecFile=..\SlackSkills.nuspec /p:Version=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="See https://github.com/BrainOffline/SlackSkills/releases/tag/${{ github.event.release.tag_name }}"
