@@ -10,8 +10,6 @@ using System.Threading.Tasks;
 
 using Asciis;
 
-using JetBrains.Annotations;
-
 using Microsoft.Extensions.Logging;
 
 using SlackSkills.Surface;
@@ -514,7 +512,7 @@ namespace SlackSkills
         /// <summary>
         ///     Register callback when a message matches a regex expression
         /// </summary>
-        public void OnMessage( [ NotNull ] string regex, [ NotNull ] Action< ISlackApp, MessageBase > action )
+        public void OnMessage( string regex, Action< ISlackApp, MessageBase > action )
         {
             _apiEventHandlers.Add( new ApiEventHandler(
                                              Filter: new Regex( regex ),
@@ -524,7 +522,7 @@ namespace SlackSkills
         /// <summary>
         ///     Register callback for a particular type of message
         /// </summary>
-        public void OnMessage<T>([NotNull] Action<ISlackApp,T> action) where T : SlackMessage
+        public void OnMessage<T>(Action<ISlackApp,T> action) where T : SlackMessage
         {
             var attr = MessageTypes.GetMessageAttributes<T>();
             if (attr == null) return;
@@ -538,7 +536,7 @@ namespace SlackSkills
         /// <summary>
         ///     Register callback for a particular type of message
         /// </summary>
-        public void OnMessage<T>([NotNull] Action<ISlackApp, T, IEnvelope<SlackMessage> > action) 
+        public void OnMessage<T>(Action<ISlackApp, T, IEnvelope<SlackMessage> > action) 
             where T : SlackMessage
         {
             var attr = MessageTypes.GetMessageAttributes<T>();

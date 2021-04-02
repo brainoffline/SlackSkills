@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-using JetBrains.Annotations;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -28,7 +26,7 @@ namespace SlackSkills.Surface
         public string  type      { get; }
         public string? action_id { get; set; }
 
-        protected Element( [ NotNull ] string type, string? actionId )
+        protected Element( string type, string? actionId )
         {
             this.type = type;
             action_id = actionId;
@@ -215,7 +213,7 @@ namespace SlackSkills.Surface
         public Confirm? confirm { get;                 set; }
 
         public CheckboxesElement() : base("checkboxes", "" ) { }
-        public CheckboxesElement( [ NotNull ] string actionId, IEnumerable<Option>? options = null ) : base( "checkboxes", actionId )
+        public CheckboxesElement(  string actionId, IEnumerable<Option>? options = null ) : base( "checkboxes", actionId )
         {
             if (options != null)
                 this.options.AddRange( options );
@@ -251,7 +249,7 @@ namespace SlackSkills.Surface
         public Confirm?      confirm         { get; set; }
 
         public RadioButtonsElement() : base("radio_buttons", "") { }
-        public RadioButtonsElement([NotNull] string actionId, IEnumerable<Option>? options = null) : base("radio_buttons", actionId)
+        public RadioButtonsElement( string actionId, IEnumerable<Option>? options = null) : base("radio_buttons", actionId)
         {
             if (options != null)
                 this.options.AddRange(options);
@@ -297,7 +295,7 @@ namespace SlackSkills.Surface
             set => SetInitialDate( value );
         }
         public DatePickerElement() : base("datepicker", "") { }
-        public DatePickerElement( [ NotNull ] string actionId ) : base( "datepicker", actionId ) { }
+        public DatePickerElement(  string actionId ) : base( "datepicker", actionId ) { }
 
         public bool ShouldSerializeselected_date() =>
             false;
@@ -345,7 +343,7 @@ namespace SlackSkills.Surface
         }
 
         public TimePickerElement() : base("timepicker", "") { }
-        public TimePickerElement([NotNull] string actionId) : base("timepicker", actionId) { }
+        public TimePickerElement( string actionId) : base("timepicker", actionId) { }
 
         public bool ShouldSerializeselected_time() =>
             false;
@@ -390,7 +388,7 @@ namespace SlackSkills.Surface
             false;
 
         public OverflowMenuElement() : base("overflow", "") { }
-        public OverflowMenuElement( [ NotNull ] string actionId ) : base( "overflow", actionId ) { }
+        public OverflowMenuElement(  string actionId ) : base( "overflow", actionId ) { }
 
         public OverflowMenuElement Add(Option option)
         {
@@ -432,7 +430,7 @@ namespace SlackSkills.Surface
         }
 
         public SelectElement() : base("static_select", "") { }
-        public SelectElement( [ NotNull ] string actionId, PlainText placeholder ) 
+        public SelectElement(  string actionId, PlainText placeholder ) 
             : base( "static_select", actionId )
         {
             this.placeholder = placeholder;
@@ -492,7 +490,7 @@ namespace SlackSkills.Surface
             ClickEvent?.Invoke(surface, this, action);
 
         public SelectExternalElement() : base("external_select", "") { }
-        public SelectExternalElement([NotNull] string actionId, PlainText placeholder)
+        public SelectExternalElement( string actionId, PlainText placeholder)
             : base("external_select", actionId)
         {
             this.placeholder = placeholder;
@@ -532,7 +530,7 @@ namespace SlackSkills.Surface
             ClickEvent?.Invoke(surface, this, action);
 
         public UsersSelectElement() : base("users_select", "") { }
-        public UsersSelectElement([NotNull] string actionId, PlainText placeholder)
+        public UsersSelectElement( string actionId, PlainText placeholder)
             : base("users_select", actionId)
         {
             this.placeholder = placeholder;
@@ -575,7 +573,7 @@ namespace SlackSkills.Surface
             ClickEvent?.Invoke(surface, this, action);
 
         public ConversationSelectElement() : base("conversations_select", "") { }
-        public ConversationSelectElement([NotNull] string actionId, PlainText placeholder)
+        public ConversationSelectElement( string actionId, PlainText placeholder)
             : base("conversations_select", actionId)
         {
             this.placeholder = placeholder;
@@ -620,7 +618,7 @@ namespace SlackSkills.Surface
         }
 
         public ChannelSelectElement() : base("channels_select", "") { }
-        public ChannelSelectElement([NotNull] string actionId, PlainText placeholder)
+        public ChannelSelectElement( string actionId, PlainText placeholder)
             : base("channels_select", actionId)
         {
             this.placeholder = placeholder;
@@ -666,7 +664,7 @@ namespace SlackSkills.Surface
             ClickEvent?.Invoke(surface, this, action);
 
         public MultiSelectElement() : base("multi_static_select", "") { }
-        public MultiSelectElement([NotNull] string actionId, PlainText placeholder)
+        public MultiSelectElement( string actionId, PlainText placeholder)
             : base("multi_static_select", actionId)
         {
             this.placeholder = placeholder;
@@ -734,7 +732,7 @@ namespace SlackSkills.Surface
         }
 
         public MultiSelectExternalElement() : base("multi_external_select", "") { }
-        public MultiSelectExternalElement([NotNull] string actionId, PlainText placeholder)
+        public MultiSelectExternalElement( string actionId, PlainText placeholder)
             : base("multi_external_select", actionId)
         {
             this.placeholder = placeholder;
@@ -776,7 +774,7 @@ namespace SlackSkills.Surface
             ClickEvent?.Invoke(surface, this, action);
 
         public MultiUserSelectElement() : base("multi_users_select", "") { }
-        public MultiUserSelectElement([NotNull] string actionId, PlainText placeholder)
+        public MultiUserSelectElement( string actionId, PlainText placeholder)
             : base("multi_users_select", actionId)
         {
             this.placeholder = placeholder;
@@ -820,7 +818,7 @@ namespace SlackSkills.Surface
             ClickEvent?.Invoke(surface, this, action);
 
         public MultiConversationSelectElement() : base("multi_conversations_select", "") { }
-        public MultiConversationSelectElement([NotNull] string actionId, PlainText placeholder)
+        public MultiConversationSelectElement( string actionId, PlainText placeholder)
             : base("multi_conversations_select", actionId)
         {
             this.placeholder = placeholder;
@@ -861,7 +859,7 @@ namespace SlackSkills.Surface
             ClickEvent?.Invoke(surface, this, action);
 
         public MultiChannelSelectElement() : base("multi_channels_select", "") { }
-        public MultiChannelSelectElement([NotNull] string actionId, PlainText placeholder)
+        public MultiChannelSelectElement( string actionId, PlainText placeholder)
             : base("multi_channels_select", actionId)
         {
             this.placeholder = placeholder;

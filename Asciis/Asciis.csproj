@@ -3,14 +3,17 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <Authors>Brian Donovan-Smith</Authors>
+    <Product>Asciis library</Product>
+    <Copyright>Copyright © 2021 Brian Donovan-Smith</Copyright>
+    <Description>A collection of useful Ascii and string helpers</Description>
+    <PackageId>BrainOffline.Asciis</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Figlet\fonts\3D.flf" />
     <None Remove="Figlet\fonts\3DASCII.flf" />
     <None Remove="Figlet\fonts\3ddiagonal.flf" />
-    <None Remove="Figlet\fonts\646-ca.flc" />
-    <None Remove="Figlet\fonts\646-ca2.flc" />
     <None Remove="Figlet\fonts\Acrobatic.flf" />
     <None Remove="Figlet\fonts\Alpha.flf" />
     <None Remove="Figlet\fonts\AMCAAA01.flf" />
@@ -97,7 +100,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Figlet\fonts\646-ca2.flc" />
     <EmbeddedResource Include="Figlet\fonts\3D.flf" />
     <EmbeddedResource Include="Figlet\fonts\3DASCII.flf" />
     <EmbeddedResource Include="Figlet\fonts\3ddiagonal.flf" />
@@ -184,14 +186,6 @@
     <EmbeddedResource Include="Figlet\fonts\Univers.flf" />
     <EmbeddedResource Include="Figlet\fonts\Varsity.flf" />
     <EmbeddedResource Include="Figlet\fonts\Whimsy.flf" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2020.3.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Resource Include="Figlet\fonts\646-ca.flc" />
   </ItemGroup>
 
 </Project>

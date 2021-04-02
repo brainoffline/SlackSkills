@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
-using JetBrains.Annotations;
 
 using SlackSkills.Surface;
 
@@ -20,7 +18,7 @@ namespace SlackSkills
             return sb.ToString();
         }
 
-        static void ExtractText([NotNull] StringBuilder sb, [NotNull] Layout block)
+        static void ExtractText(StringBuilder sb, Layout block)
         {
             switch (block)
             {
@@ -47,7 +45,7 @@ namespace SlackSkills
             }
         }
 
-        static void ExtractText( [ NotNull ] StringBuilder sb, IElement? block )
+        static void ExtractText( StringBuilder sb, IElement? block )
         {
             if (block == null)
                 return;

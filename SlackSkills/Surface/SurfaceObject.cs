@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using JetBrains.Annotations;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -28,7 +26,7 @@ namespace SlackSkills.Surface
         public bool?  emoji    { get; set; }
         public bool?  verbatim { get; set; }
 
-        protected Text( [ NotNull ] string type, string text )
+        protected Text(  string type, string text )
         {
             this.type = type;
             this.text = text;

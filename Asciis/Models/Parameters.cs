@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 
-using JetBrains.Annotations;
-
 namespace Asciis
 {
     public class Parameters : IEnumerable<KeyValuePair<string?, string?>>
@@ -23,7 +21,7 @@ namespace Asciis
             _dict = new Dictionary< string, string? >( dictionary );
         }
 
-        public Parameters([NotNull] string key, object? value)
+        public Parameters(string key, object? value)
         {
             _dict = new Dictionary< string, string? > { { key, value?.ToString() ?? "" } };
         }

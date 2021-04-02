@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>BrainOffline.SlackSkills</id>
+    <version>1.0.0</version>
+    <authors>Brian Donovan-Smith</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="file">License.txt</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <projectUrl>https://brainoffline.github.io/</projectUrl>
+    <description>Slack integration library</description>
+    <copyright>Copyright © Brian Donovan-Smith 2021</copyright>
+    <repository url="https://github.com/brainoffline/SlackSkills" />
+    <tags>Slack bot library</tags>
+    <dependencies>
+      <group targetFramework="net5.0">
+        <dependency id="Microsoft.Extensions.Logging" version="5.0.0" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="12.0.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="SlackSkills\bin\Release\net5.0\License.txt" target="" />
+    <file src="SlackSkills\bin\Release\net5.0\*.dll" target="lib\net5.0\" />
+    <file src="SlackSkills\bin\Release\net5.0\*.pdb" target="lib\net5.0\" />
+  </files>
+</package>

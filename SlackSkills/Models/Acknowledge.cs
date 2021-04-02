@@ -2,8 +2,6 @@
 
 using System;
 
-using JetBrains.Annotations;
-
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 // ReSharper disable IdentifierTypo

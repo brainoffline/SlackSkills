@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-
-using JetBrains.Annotations;
 
 namespace Asciis.Tests
 {
@@ -59,7 +56,6 @@ namespace Asciis.Tests
             StringValue = "Command called";
         }
         
-        [ UsedImplicitly ]
         [ Action( "doit", "Call the DoIt command", DefaultAction = true ) ]
         public void DoItCommand(List<string> extras)
         {

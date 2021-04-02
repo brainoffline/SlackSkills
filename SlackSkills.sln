@@ -19,9 +19,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrainSlack", "BrainSlack\Br
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Stuff", "Stuff", "{084447E7-EFF0-4151-8BBF-8CB6BB73841B}"
 	ProjectSection(SolutionItems) = preProject
-		LICENSE = LICENSE
+		License.txt = License.txt
 		Licenses.txt = Licenses.txt
 		README.md = README.md
+		.github\workflows\release.yml = .github\workflows\release.yml
+		SlackSkills.nuspec = SlackSkills.nuspec
+		.github\workflows\slackskills.yml = .github\workflows\slackskills.yml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SlackSkills.Tests", "SlackSkills.Tests\SlackSkills.Tests.csproj", "{C6B958CA-BCB8-4374-8733-E73A72638500}"

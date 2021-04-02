@@ -1,3 +1,5 @@
+SlackSkills library
+
 MIT License
 
 Copyright (c) 2021 Brian Donovan-Smith

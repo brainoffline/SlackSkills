@@ -3,8 +3,6 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
 
-using JetBrains.Annotations;
-
 using SlackSkills.Surface;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -71,7 +69,7 @@ namespace SlackSkills
         }
 
         public static (Type, SlackMessageAttribute) GetMessageAttributes(
-            [NotNull] string type, 
+            string type, 
             string? subType = null)
         {
             var pair = EventMessageTypes.FirstOrDefault(mt => mt.Value.Type == type && mt.Value.SubType == subType);

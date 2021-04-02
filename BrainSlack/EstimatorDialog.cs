@@ -1,10 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using JetBrains.Annotations;
 
 using SlackSkills;
 using SlackSkills.Surface;
@@ -32,15 +27,13 @@ namespace BrainSlack
         public           SelectElement    ScaleSelect { get; }
         public           SelectElement    RiskSelect { get; }
 
-        [CanBeNull]
-        public string EstimateTitle =>
+        public string? EstimateTitle =>
             TitleInput?.value;
 
-        [CanBeNull]
-        public string EstimateDescription =>
+        public string? EstimateDescription =>
             _descriptionInput?.value;
 
-        public EstimatorDialog( [ NotNull ] ISlackApp app, [ CanBeNull ] string title = null, [ CanBeNull ] string description = null ) : base( app )
+        public EstimatorDialog(  ISlackApp app, string? title = null, string? description = null ) : base( app )
         {
             TitleInput = new TextInputElement("estimate-title")
                           {

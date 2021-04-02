@@ -5,8 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-using JetBrains.Annotations;
-
 namespace Asciis
 {
     public static class StringHelpers
@@ -24,11 +22,11 @@ namespace Asciis
             return true;
         }
 
-        public static bool IsNullOrWhiteSpace([CanBeNull] this string value) => 
+        public static bool IsNullOrWhiteSpace(this string? value) => 
             string.IsNullOrWhiteSpace(value);
-        public static bool IsNullOrEmpty([CanBeNull] this string value) => 
+        public static bool IsNullOrEmpty(this string? value) => 
             string.IsNullOrEmpty(value);
-        public static bool HasValue([CanBeNull] this string value) => 
+        public static bool HasValue(this string? value) => 
             !string.IsNullOrWhiteSpace(value);
 
         /// <summary>

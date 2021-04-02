@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
-
-using JetBrains.Annotations;
 
 using SlackSkills;
 using SlackSkills.Surface;
@@ -39,7 +34,7 @@ namespace BrainSlack
         private List<string> TShirt    = new() { "XS", "S", "M", "L", "XL", "XXL", ":shrug:", ":question:" };
         private List<string> Binary    = new() { "0", "1", "2", "4", "8", "16", "32", "64", "128", "256", ":shrug:", ":question:" };
 
-        public EstimateSurface( [ NotNull ] ISlackApp app ) : base( app )
+        public EstimateSurface(  ISlackApp app ) : base( app )
         {
         }
 
@@ -145,8 +140,7 @@ namespace BrainSlack
             public bool Voted    { get; set; }
             public bool Revealed { get; set; }
 
-            [ CanBeNull ]
-            public string Vote { get; set; }
+            public string? Vote { get; set; }
             
             public override string ToString()
             {

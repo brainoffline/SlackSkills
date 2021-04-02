@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 
-using JetBrains.Annotations;
-
 using SlackSkills;
 using SlackSkills.Surface;
 
@@ -12,7 +10,7 @@ namespace SampleCLI
     {
         private readonly SectionLayout _statusLayout;
 
-        public ExampleHometabSurface( [ NotNull ] ISlackApp slackApp ) : base( slackApp )
+        public ExampleHometabSurface(  ISlackApp slackApp ) : base( slackApp )
         {
             Title = "SlackDK Title";
             var layouts = new List< Layout >

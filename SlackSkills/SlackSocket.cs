@@ -7,8 +7,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-using JetBrains.Annotations;
-
 using Microsoft.Extensions.Logging;
 
 using Newtonsoft.Json.Linq;
@@ -209,7 +207,7 @@ namespace SlackSkills
         /// <summary>
         /// Send event request message
         /// </summary>
-        public void PushRequest<TRequest>([NotNull] TRequest message) where TRequest : SlackMessage
+        public void PushRequest<TRequest>(TRequest message) where TRequest : SlackMessage
         {
             if (message.id == 0)
                 message.id = Interlocked.Increment(ref _currentId);
@@ -230,7 +228,7 @@ namespace SlackSkills
             KickSendQueue();
         }
 
-        public void Push< TRequest >( [ NotNull ] TRequest message )
+        public void Push< TRequest >( TRequest message )
         {
             if (message is Envelope envelop)
                 RemoveEnvelopeId(envelop.envelope_id);
@@ -251,7 +249,7 @@ namespace SlackSkills
             }
         }
 
-        void HandleMessageJson([NotNull] string json)
+        void HandleMessageJson(string json)
         {
             _logger.LogDebug( $"www\n{JObject.Parse( json ).ToString( Formatting.Indented )}\n" );
 

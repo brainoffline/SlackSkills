@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
-using JetBrains.Annotations;
 
 using Microsoft.Extensions.Logging;
 
@@ -39,7 +36,7 @@ namespace SlackSkills.Surface
         public Action< ViewSubmission >? Submitted = null;
         public Action< ViewClosed >?     Closed    = null;
 
-        public SlackSurface( [NotNull] ISlackApp app )
+        public SlackSurface(  ISlackApp app )
         {
             SlackApp = app;
             UniqueId = Interlocked.Increment( ref _ids );
