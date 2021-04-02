@@ -2,6 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>BrainOffline.SlackSkills</id>
+	<version>$Version$</version>
     <authors>Brian Donovan-Smith</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="file">License.txt</license>
@@ -10,7 +11,7 @@
     <description>Slack integration library</description>
     <copyright>Copyright © Brian Donovan-Smith 2021</copyright>
     <repository url="https://github.com/brainoffline/SlackSkills" />
-    <tags>Slack bot library</tags>
+    <tags>SlackSkills,Slack,Bot,Library</tags>
     <dependencies>
       <group targetFramework="net5.0">
         <dependency id="Microsoft.Extensions.Logging" version="5.0.0" exclude="Build,Analyzers" />

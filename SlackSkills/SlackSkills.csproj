@@ -3,13 +3,16 @@
 	<PropertyGroup>
 		<TargetFramework>net5.0</TargetFramework>
 		<Nullable>enable</Nullable>
-		<PackageLicenseFile>License.txt</PackageLicenseFile>
+	</PropertyGroup>
+
+	<PropertyGroup>
 		<PackageId>BrainOffline.SlackSkills</PackageId>
+		<PackageLicenseFile>License.txt</PackageLicenseFile>
 		<Authors>Brian Donovan-Smith</Authors>
-		<Company>Brian Donovan-Smith</Company>
+		<PackageTags>SlackSkills,Slack,Bot</PackageTags>
+		<Title>SlackSkills</Title>
 		<Description>Slack integration library</Description>
 		<Copyright>Copyright © 2021 Brian Donovan-Smith</Copyright>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
 
 	<ItemGroup>

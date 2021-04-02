@@ -31,7 +31,7 @@ jobs:
       run: dotnet build --no-restore -c Release
 
     - name: Create the NuGet package
-      run: dotnet pack -c Release .\SlackSkills\SlackSkills.csproj /p:NuspecFile=..\SlackSkills.nuspec /p:Version=${{ github.event.release.tag_name }} /p:PackageVersion=${{ github.event.release.tag_name }} /p:PackageReleaseNotes="See https://github.com/BrainOffline/SlackSkills/releases/tag/${{ github.event.release.tag_name }}"
+      run: dotnet pack -c Release .\SlackSkills\SlackSkills.csproj /p:NuspecFile=..\SlackSkills.nuspec -p:NuspecProperties="Version=${{ github.event.release.tag_name }}" /p:PackageReleaseNotes="See https://github.com/BrainOffline/SlackSkills/releases/tag/${{ github.event.release.tag_name }}"
 
     - name: Publish Nuget Package
       run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_api_key }} --source https://api.nuget.org/v3/index.json --no-symbols true
